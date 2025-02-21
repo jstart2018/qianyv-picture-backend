@@ -1,0 +1,34 @@
+server:
+  port: 8000
+  servlet:
+    context-path: /api #设置上下文，请求这个后端时要：localhost:8000/api
+
+spring:
+  application:
+    name: qianyv-picture-backend1
+    #数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/qianyv_picture
+    username: root
+    password: 123456
+mybatis-plus:
+  configuration:
+    #仅在开发环境中打印日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete #全局逻辑删除的实体字段名
+      logic-delete-value: 1 #逻辑已删除的值为1
+      logic-not-delete-value: 0 #逻辑为删除的值为0
+knife4j:
+  enable: true
+  openapi:
+    title: 接口文档
+    version: v1.0
+    group:
+      default: #组别
+        group-name: 默认分组  #组名
+        api-rule: package   #用什么规则识别接口，package表示扫描包，把这个包下的接口扫描出来
+        api-rule-resources:
+          - com.jstart.qianyvpicturebackend.controller # 包的位置
