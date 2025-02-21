@@ -26,4 +26,5 @@ public class BusinessException extends RuntimeException {
         this.code = errorEnum.getCode();
     }
 
+
 }
