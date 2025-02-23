@@ -1,8 +1,7 @@
 package com.jstart.qianyvpicturebackend.exception;
 
 
-import com.jstart.qianyvpicturebackend.common.BaseResponse;
-import com.jstart.qianyvpicturebackend.common.ResultUtils;
+import com.jstart.qianyvpicturebackend.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -12,15 +11,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public BaseResponse<?> businessExceptionHandler(BusinessException e) {
+    public Result<?> businessExceptionHandler(BusinessException e) {
         log.error("BusinessException", e);
-        return ResultUtils.error(e.getCode(), e.getMessage());
+        return Result.error(e.getCode(), e.getMessage());
+    }
+    //Preconditions参数校验产生的异常
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Result<?> businessExceptionHandler(IllegalArgumentException e) {
+        log.error("IllegalArgumentException", e);
+        return Result.error(ErrorEnum.PARAMS_ERROR, e.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)
-    public BaseResponse<?> runtimeExceptionHandler(RuntimeException e) {
+    public Result<?> runtimeExceptionHandler(RuntimeException e) {
         log.error("RuntimeException", e);
-        return ResultUtils.error(ErrorEnum.SYSTEM_ERROR);
+        return Result.error(ErrorEnum.SYSTEM_ERROR);
     }
 
 }

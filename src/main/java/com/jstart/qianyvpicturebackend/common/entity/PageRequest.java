@@ -1,4 +1,4 @@
-package com.jstart.qianyvpicturebackend.common;
+package com.jstart.qianyvpicturebackend.common.entity;
 
 import lombok.Data;
 

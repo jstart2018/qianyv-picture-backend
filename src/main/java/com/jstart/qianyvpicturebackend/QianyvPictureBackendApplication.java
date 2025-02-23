@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @SpringBootApplication
-@MapperScan
+@MapperScan("com.jstart.qianyvpicturebackend.mapper")
 @EnableAspectJAutoProxy(exposeProxy = true)
 public class QianyvPictureBackendApplication {
 
