@@ -1,7 +1,6 @@
 package com.jstart.qianyvpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.jstart.qianyvpicturebackend.model.dto.UserDTO;
 import com.jstart.qianyvpicturebackend.model.dto.user.UserLoginDTO;
 import com.jstart.qianyvpicturebackend.model.dto.user.UserQueryRequest;
 import com.jstart.qianyvpicturebackend.model.dto.user.UserRegisterDTO;
@@ -80,4 +79,15 @@ public interface UserService extends IService<User> {
      * @return
      */
     QueryWrapper<User> getUserQueryWrapper(UserQueryRequest userQueryRequest);
+
+
+    /**
+     * 是否为管理员
+     *
+     * @param user
+     * @return
+     */
+    boolean isAdmin(User user);
+
+
 }
