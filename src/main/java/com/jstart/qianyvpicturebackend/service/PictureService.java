@@ -3,6 +3,7 @@ package com.jstart.qianyvpicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.model.dto.picture.PictureQueryRequest;
+import com.jstart.qianyvpicturebackend.model.dto.picture.PictureReviewRequest;
 import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -18,6 +19,14 @@ import javax.servlet.http.HttpServletRequest;
 * @createDate 2025-02-24 09:26:44
 */
 public interface PictureService extends IService<Picture> {
+
+    /**
+     * 文件操作 审核预处理，如果是管理员默认审核通过，普通用户默认设为待审核
+     * @param picture
+     * @param loginUser
+     */
+    void pictureReviewPretreatment(Picture picture, User loginUser);
+
     /**
      * 上传图片
      * @param multipartFile 文件
@@ -55,4 +64,12 @@ public interface PictureService extends IService<Picture> {
      * @param picture
      */
     public void validPicture(Picture picture);
+
+    /**
+     * 审核图片
+     * @param pictureReviewRequest 审核内容
+     * @param request 用于获取登录用户
+     * @return 成功与否
+     */
+    Boolean doPictureReview(PictureReviewRequest pictureReviewRequest, HttpServletRequest request);
 }

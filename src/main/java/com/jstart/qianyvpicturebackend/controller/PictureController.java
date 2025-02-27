@@ -6,15 +6,13 @@ import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
+import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
 import com.jstart.qianyvpicturebackend.common.manager.FileManager;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
 import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureEditRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUpdateRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.jstart.qianyvpicturebackend.model.dto.picture.*;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.jstart.qianyvpicturebackend.model.entity.User;
 import com.jstart.qianyvpicturebackend.model.vo.PictureTagCategory;
@@ -70,7 +68,7 @@ public class PictureController {
     @PostMapping("/delete")
     public Result<Boolean> deletePicture(@RequestBody DeleteRequest deleteRequest,
                                          HttpServletRequest request){
-        ThrowUtils.throwIf(deleteRequest==null||deleteRequest.getId() <= 0,
+        ThrowUtils.throwIf(deleteRequest==null||deleteRequest.getId()==null||deleteRequest.getId() <= 0,
                 ErrorEnum.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         Long id = deleteRequest.getId();
@@ -104,6 +102,8 @@ public class PictureController {
         picture.setTags(JSONUtil.toJsonStr(pictureUpdateRequest.getTags()));
         //校验参数合理性
         pictureService.validPicture(picture);
+        //图片审核数据处理：
+        pictureService.pictureReviewPretreatment(picture,userService.getLoginUser(request));
         //操作数据库
         boolean result = pictureService.updateById(picture);
         ThrowUtils.throwIf(!result,ErrorEnum.SYSTEM_ERROR,"操作数据库失败");
@@ -137,6 +137,8 @@ public class PictureController {
         }
         //校验参数合法性
         pictureService.validPicture(picture);
+        //图片审核数据处理：
+        pictureService.pictureReviewPretreatment(picture,loginUser);
         //操作数据库
         boolean result = pictureService.updateById(picture);
         ThrowUtils.throwIf(!result,ErrorEnum.OPERATION_ERROR,"操作数据库失败");
@@ -204,9 +206,13 @@ public class PictureController {
     @PostMapping("/list/page/vo")
     public Result<Page<PictureVO>> getPictureListVO(@RequestBody PictureQueryRequest pictureQueryRequest){
         ThrowUtils.throwIf(pictureQueryRequest==null,ErrorEnum.PARAMS_ERROR);
+        //防止爬虫
+        ThrowUtils.throwIf(pictureQueryRequest.getPageSize()>20,ErrorEnum.PARAMS_ERROR,"页面数量过大");
+        
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
-
+        //限制只能看已过审的图片
+        pictureQueryRequest.setReviewStatus(PictureStatusEnum.PASS.getValue());
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize),
                 pictureService.getQueryWrapper(pictureQueryRequest));
 
@@ -231,9 +237,13 @@ public class PictureController {
     }
 
 
-
-
-
-
+    @PostMapping("/review")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public Result<Boolean> doPictureReview(@RequestBody PictureReviewRequest pictureReviewRequest,
+                                           HttpServletRequest request){
+        ThrowUtils.throwIf(pictureReviewRequest == null,ErrorEnum.PARAMS_ERROR);
+        Boolean isOk = pictureService.doPictureReview(pictureReviewRequest, request);
+        return Result.success(isOk);
+    }
 
 }
