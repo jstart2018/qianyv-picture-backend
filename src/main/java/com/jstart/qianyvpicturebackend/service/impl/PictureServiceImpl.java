@@ -8,6 +8,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
 import com.jstart.qianyvpicturebackend.common.manager.FileManager;
+import com.jstart.qianyvpicturebackend.common.manager.uploadFile.FilePictureUpload;
+import com.jstart.qianyvpicturebackend.common.manager.uploadFile.PictureUploadTemplate;
+import com.jstart.qianyvpicturebackend.common.manager.uploadFile.UrlPictureUpload;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
 import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
@@ -25,7 +28,6 @@ import com.jstart.qianyvpicturebackend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -43,9 +45,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Resource
     private PictureMapper pictureMapper;
     @Resource
-    private FileManager fileManager;
-    @Resource
     private UserService userService;
+    @Resource
+    private FilePictureUpload filePictureUpload;
+    @Resource
+    private UrlPictureUpload urlPictureUpload;
 
     /**
      * 文件操作 审核预处理，如果是管理员默认审核通过，普通用户默认设为待审核
@@ -67,15 +71,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     /**
      * 上传图片
      *
-     * @param multipartFile        文件
+     * @param inputSource        文件
      * @param pictureUploadRequest 上传请求参数，只有一个id属性，id不为空表示更新图片，否则为新增
      * @param loginUser            当前登录的用户
      * @return 脱敏后的图片信息
      */
     @Override
-    public PictureVO uploadPicture(MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, User loginUser) {
+    public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
         ThrowUtils.throwIf(loginUser == null, ErrorEnum.NO_AUTH_ERROR);
-        // 用于判断是新增还是更新图片
+        //1、 用于判断是新增还是更新图片
         Long pictureId = null;
         if (pictureUploadRequest != null) {
             pictureId = pictureUploadRequest.getId();
@@ -90,10 +94,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
         }
         // 上传图片，得到信息
-        // 按照用户 id 划分目录
+        // 2、按照用户 id 划分目录
         String uploadPathPrefix = String.format("public/%s", loginUser.getId());
-        UploadPictureResult uploadPictureResult = fileManager.uploadPicture(multipartFile, uploadPathPrefix);
-        // 构造要入库的图片信息
+        //3、判断是文件上传的还是url上传的
+        PictureUploadTemplate pictureUploadTemplate = filePictureUpload;
+        if (inputSource instanceof String) {
+            pictureUploadTemplate = urlPictureUpload;
+        }
+        UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource, uploadPathPrefix);
+        // 4、构造要入库的图片信息
         Picture picture = new Picture();
         //图片审核数据处理：
         this.pictureReviewPretreatment(picture,loginUser);
@@ -106,14 +115,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicScale(uploadPictureResult.getPicScale());
         picture.setPicFormat(uploadPictureResult.getPicFormat());
         picture.setUserId(loginUser.getId());
-        // 如果 pictureId 不为空，表示更新，否则是新增
+        // 5、如果 pictureId 不为空，表示更新，否则是新增
         if (pictureId != null) {
             // 如果是更新，需要补充 id 和编辑时间
             picture.setId(pictureId);
             picture.setEditTime(new Date());
         }
+        //6、操作数据库
         boolean result = this.saveOrUpdate(picture);
-        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR, "图片上传失败");
+        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR, "图片上传数据库失败");
         return PictureVO.objToVo(picture);
     }
 

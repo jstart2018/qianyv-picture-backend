@@ -26,6 +26,7 @@ import java.util.Random;
 
 @Service
 @Slf4j
+@Deprecated //已经用模板方法代替，添加注解表示已经废弃
 public class FileManager {  
   
     @Resource
