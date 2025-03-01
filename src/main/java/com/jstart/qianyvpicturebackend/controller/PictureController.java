@@ -1,6 +1,7 @@
 package com.jstart.qianyvpicturebackend.controller;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
@@ -8,6 +9,7 @@ import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
+import com.jstart.qianyvpicturebackend.common.manager.CosManager;
 import com.jstart.qianyvpicturebackend.common.manager.FileManager;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
 import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
@@ -22,6 +24,7 @@ import com.jstart.qianyvpicturebackend.service.PictureService;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.DigestUtils;
@@ -43,6 +46,8 @@ public class PictureController {
     private PictureService pictureService;
     @Resource
     private UserService userService;
+    @Autowired
+    private CosManager cosManager;
 
 
     /**
@@ -87,12 +92,15 @@ public class PictureController {
         Long id = deleteRequest.getId();
         //查询数据库数据是否存在
         Picture picture = pictureService.getById(id);
-        ThrowUtils.throwIf(picture==null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(picture==null, ErrorEnum.NOT_FOUND_ERROR,"没有该图片");
         //判断是否有权限删除，只有本人或管理员才能删除
         if(loginUser.getId() != picture.getUserId() && !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)){
             throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
         }
-        //执行删除操作
+
+        pictureService.clearPictureFile(picture);
+
+        //删除数据库数据
         boolean result = pictureService.removeById(id);
         ThrowUtils.throwIf(!result,ErrorEnum.OPERATION_ERROR,"操作数据库失败");
         return Result.success(result);

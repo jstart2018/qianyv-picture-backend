@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
+import com.jstart.qianyvpicturebackend.common.manager.CosManager;
 import com.jstart.qianyvpicturebackend.common.manager.uploadFile.FilePictureUpload;
 import com.jstart.qianyvpicturebackend.common.manager.uploadFile.PictureUploadTemplate;
 import com.jstart.qianyvpicturebackend.common.manager.uploadFile.UrlPictureUpload;
@@ -39,6 +40,7 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -68,6 +70,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     private UrlPictureUpload urlPictureUpload;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private CosManager cosManager;
 
     private final Cache<String, String> LOCAL_CACHE =
             Caffeine.newBuilder().initialCapacity(1024) //初始容量
@@ -118,6 +122,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (picture.getUserId().equals(loginUser.getId()) && userService.isAdmin(loginUser)) {
                 throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
             }
+
+            //是更新，且有权限，先删除原来
+            this.clearPictureFile(picture);
         }
         // 上传图片，得到信息
         // 2、按照用户 id 划分目录
@@ -355,7 +362,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         ThrowUtils.throwIf(count > 30 || count < 1, ErrorEnum.PARAMS_ERROR, "仅可导入1~30 条");
         // 要抓取的地址,两个占位符分别是：搜索词，从第几条开始；
         int pageIndex = RandomUtil.randomInt(200);
-        String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1&first=%s", searchText,pageIndex);
+        String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1&first=%s", searchText, pageIndex);
         Document document;
         try {
             document = Jsoup.connect(fetchUrl).get();
@@ -401,8 +408,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
             // 上传图片
             PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
-            if(StrUtil.isNotBlank(namePrefix))
-                pictureUploadRequest.setPicName(namePrefix+(uploadCount+1));
+            if (StrUtil.isNotBlank(namePrefix))
+                pictureUploadRequest.setPicName(namePrefix + (uploadCount + 1));
             try {
                 PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
                 log.info("图片上传成功, id = {}", pictureVO.getId());
@@ -430,7 +437,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //一、构建缓存key
         String condition = JSONUtil.toJsonStr(pictureQueryRequest);
         String hashKey = DigestUtils.md5DigestAsHex(condition.getBytes());
-        String cacheKey = String.format("picture:getPictureListVO:%s",hashKey);
+        String cacheKey = String.format("picture:getPictureListVO:%s", hashKey);
         //1、查本地缓存：
         Page<PictureVO> cachePage;
         String cacheValue = LOCAL_CACHE.getIfPresent(cacheKey);
@@ -441,11 +448,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //2、查redis缓存
         ValueOperations<String, String> opsedForValue = stringRedisTemplate.opsForValue();
         String cachedValue = opsedForValue.get(cacheKey);
-        if (cachedValue!=null){
+        if (cachedValue != null) {
             cachePage = JSONUtil.toBean(cachedValue, Page.class);
             //放到本地缓存中
             String jsonStr = JSONUtil.toJsonStr(cachePage);
-            LOCAL_CACHE.put(cacheKey,jsonStr);
+            LOCAL_CACHE.put(cacheKey, jsonStr);
             //返回
             return cachePage;
         }
@@ -458,11 +465,39 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //1、序列化对象：
         String pageResult = JSONUtil.toJsonStr(pictureVOPage);
         //2、设置缓存时间，单位是 s
-        long cacheExpireTime = 300 + RandomUtil.randomInt(0,301);
+        long cacheExpireTime = 300 + RandomUtil.randomInt(0, 301);
         //3、插入缓存
-        opsedForValue.set(cacheKey,pageResult,cacheExpireTime, TimeUnit.SECONDS);
+        opsedForValue.set(cacheKey, pageResult, cacheExpireTime, TimeUnit.SECONDS);
         return pictureVOPage;
     }
+
+    /**
+     * 清理图片COS中的对象：
+     */
+    @Async
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        // 判断该图片是否被多条记录使用
+        String pictureUrl = oldPicture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        // 有不止一条记录用到了该图片，不清理
+        if (count > 1) {
+            return;
+        }
+        // FIXME 注意，这里的 url 包含了域名，实际上只要传 key 值（存储路径）就够了
+        String url = oldPicture.getUrl();
+        String key = url.substring(url.indexOf("public"));//截取域名后的地址
+        cosManager.deleteObject(key);
+        // 清理缩略图
+        String tUrl = oldPicture.getThumbnailUrl();
+        if (StrUtil.isNotBlank(tUrl)) {
+            String tKey = tUrl.substring(tUrl.indexOf("public"));
+            cosManager.deleteObject(tKey);
+        }
+    }
+
 
 }
 

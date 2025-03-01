@@ -2,9 +2,10 @@ package com.jstart.qianyvpicturebackend.common.manager;
 
 import cn.hutool.core.io.FileUtil;
 import com.jstart.qianyvpicturebackend.config.CosClientConfig;
+import com.jstart.qianyvpicturebackend.exception.BusinessException;
+import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.exception.CosClientException;
-import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.model.*;
 import com.qcloud.cos.model.ciModel.persistence.PicOperations;
 import org.springframework.stereotype.Component;
@@ -74,11 +75,24 @@ public class CosManager {
             picOperations.setRules(rules);
         }
         putObjectRequest.setPicOperations(picOperations);
-
         //构造请求参数
         putObjectRequest.setPicOperations(picOperations);
 
         return cosClient.putObject(putObjectRequest);
+    }
+
+
+    /**
+     * 删除对象
+     *
+     * @param key 唯一键
+     */
+    public void deleteObject(String key) {
+        try {
+            cosClient.deleteObject(cosClientConfig.getBucket(),key);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorEnum.OPERATION_ERROR,"COS中删除对象异常");
+        }
     }
 
 

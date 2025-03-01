@@ -10,6 +10,7 @@ import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jstart.qianyvpicturebackend.model.entity.User;
 import com.jstart.qianyvpicturebackend.model.vo.PictureVO;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -92,4 +93,10 @@ public interface PictureService extends IService<Picture> {
      * @return
      */
     Page<PictureVO> getPictureVOPage(PictureQueryRequest pictureQueryRequest);
+
+    /**
+     * 清理图片COS中的对象：
+     */
+    @Async
+    void clearPictureFile(Picture oldPicture);
 }
