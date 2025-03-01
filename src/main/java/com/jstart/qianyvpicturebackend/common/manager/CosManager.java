@@ -1,5 +1,6 @@
 package com.jstart.qianyvpicturebackend.common.manager;
 
+import cn.hutool.core.io.FileUtil;
 import com.jstart.qianyvpicturebackend.config.CosClientConfig;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.exception.CosClientException;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class CosManager {  
@@ -57,6 +60,21 @@ public class CosManager {
         PicOperations picOperations = new PicOperations();
         // 表示返回原图信息
         picOperations.setIsPicInfo(1);
+        if(file.length()>1024*2) {
+            List<PicOperations.Rule> rules = new ArrayList<>();
+            // 缩略图处理
+            PicOperations.Rule thumbnailRule = new PicOperations.Rule();
+            thumbnailRule.setBucket(cosClientConfig.getBucket());
+            String thumbnailKey = FileUtil.mainName(key) + "_thumbnail." + FileUtil.getSuffix(key);
+            thumbnailRule.setFileId(thumbnailKey);
+            // 缩放规则 /thumbnail/<Width>x<Height>>（如果大于原图宽高，则不处理）
+            thumbnailRule.setRule(String.format("imageMogr2/thumbnail/%sx%s>", 256, 256));
+            rules.add(thumbnailRule);
+            // 构造处理参数
+            picOperations.setRules(rules);
+        }
+        putObjectRequest.setPicOperations(picOperations);
+
         //构造请求参数
         putObjectRequest.setPicOperations(picOperations);
 

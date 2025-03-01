@@ -1,5 +1,6 @@
 package com.jstart.qianyvpicturebackend.common.manager.uploadFile;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -11,7 +12,9 @@ import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
 import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
+import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,8 +73,18 @@ public abstract class PictureUploadTemplate {
             //7、上传文件
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
             //8、解析返回结果
+            //主图信息
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
-            return getUploadPictureResult(imageInfo, uploadPath, originalFilename, file);
+            //缩略图信息
+            ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
+            List<CIObject> objectList = processResults.getObjectList();
+            CIObject thumbnailCiObject = null;
+            if (CollUtil.isNotEmpty(objectList)) {
+                thumbnailCiObject = objectList.get(0);
+            }
+
+            return getUploadPictureResult(imageInfo, uploadPath,
+                    originalFilename, file,thumbnailCiObject);
 
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -95,7 +108,11 @@ public abstract class PictureUploadTemplate {
      * @param file
      * @return
      */
-    private UploadPictureResult getUploadPictureResult(ImageInfo imageInfo, String uploadPath, String originalFilename, File file) {
+    private UploadPictureResult getUploadPictureResult(ImageInfo imageInfo,
+                                                       String uploadPath,
+                                                       String originalFilename,
+                                                       File file,
+                                                       CIObject thumbnailCiObject) {
         int picWidth = imageInfo.getWidth();
         int picHeight = imageInfo.getHeight();
         /**
@@ -108,6 +125,8 @@ public abstract class PictureUploadTemplate {
         //返回封装结果：
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
+        if(thumbnailCiObject!=null)
+            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbnailCiObject.getKey());
         uploadPictureResult.setPicName(FileUtil.mainName(originalFilename));
         uploadPictureResult.setPicSize(FileUtil.size(file));
         uploadPictureResult.setPicWidth(picWidth);

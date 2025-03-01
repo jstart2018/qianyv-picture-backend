@@ -134,6 +134,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         this.pictureReviewPretreatment(picture, loginUser);
         //基础数据
         picture.setUrl(uploadPictureResult.getUrl());
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         //名字从request中传来
         String picName = uploadPictureResult.getPicName();
         if (pictureUploadRequest != null && StrUtil.isNotBlank(pictureUploadRequest.getPicName())) {
