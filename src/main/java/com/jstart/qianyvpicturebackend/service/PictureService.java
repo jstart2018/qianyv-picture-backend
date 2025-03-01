@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.model.dto.picture.PictureQueryRequest;
 import com.jstart.qianyvpicturebackend.model.dto.picture.PictureReviewRequest;
+import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadByBatchRequest;
 import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -57,7 +58,7 @@ public interface PictureService extends IService<Picture> {
     /**
      * 获取分页图片封装
      */
-    Page<PictureVO> getPictureVOPage(Page<Picture> picturePage);
+    Page<PictureVO> PicturePageToVOPage(Page<Picture> picturePage);
 
     /**
      * 校验图片数据，更新时使用
@@ -72,4 +73,23 @@ public interface PictureService extends IService<Picture> {
      * @return 成功与否
      */
     Boolean doPictureReview(PictureReviewRequest pictureReviewRequest, HttpServletRequest request);
+
+    /**
+     * 批量抓取和创建图片
+     *
+     * @param pictureUploadByBatchRequest
+     * @param loginUser
+     * @return 成功创建的图片数
+     */
+    Integer uploadPictureByBatch(
+            PictureUploadByBatchRequest pictureUploadByBatchRequest,
+            User loginUser
+    );
+
+    /**
+     * 获取分页数据 VO的
+     * @param pictureQueryRequest
+     * @return
+     */
+    Page<PictureVO> getPictureVOPage(PictureQueryRequest pictureQueryRequest);
 }

@@ -2,6 +2,9 @@ server:
   port: 8000
   servlet:
     context-path: /api #设置上下文，请求这个后端时要：localhost:8000/api
+    session:
+      cookie:
+        max-age: 259200
 
 spring:
   application:
@@ -12,12 +15,22 @@ spring:
     url: jdbc:mysql://localhost:3306/yv_picture
     username: root
     password: 123456
+  #redis配置
+  redis:
+    database: 1
+    host: 127.0.0.1
+    port: 6379
+    timeout: 5000
+  session:
+    store-type: redis
+    timeout: 2592000 #表示三十天过期，单位是秒
   profiles:
     active: local  #本地开发环境，里面要设置COS的一些配置，否则cos上传图片使用不了
   # 开放更大的文件上传体积
   servlet:
     multipart:
       max-file-size: 10MB
+
 
 
 mybatis-plus:

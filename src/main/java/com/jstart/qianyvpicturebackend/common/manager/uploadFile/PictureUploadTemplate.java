@@ -45,17 +45,19 @@ public abstract class PictureUploadTemplate {
         //1、校验图片
         checkPictureObject(inputSource);
 
-        /**
-         * 构建图片上传地址
-         */
+
         //2、获取原始文件名
         String originalFilename = getOriginalFilename(inputSource);
         String uuid = RandomUtil.randomString(16);
+        String pictureSuffix = FileUtil.getSuffix(originalFilename);
+        if (pictureSuffix.length()>4) {
+            pictureSuffix = "webp";
+        }
         //3、构建新文件名字
         String newFileName = String.format("%s_%s.%s",
                 DateUtil.formatDate(new Date()),
                 uuid,
-                FileUtil.getSuffix(originalFilename));
+                pictureSuffix);
 
         //4、构建文件上传路径
         String uploadPath = String.format("/%s/%s", uploadPathPrefix, newFileName);

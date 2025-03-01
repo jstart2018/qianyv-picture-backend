@@ -1,5 +1,6 @@
 package com.jstart.qianyvpicturebackend.controller;
 
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
@@ -21,6 +22,9 @@ import com.jstart.qianyvpicturebackend.service.PictureService;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.spring.web.json.Json;
@@ -29,6 +33,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/picture/")
@@ -38,9 +43,6 @@ public class PictureController {
     private PictureService pictureService;
     @Resource
     private UserService userService;
-
-    @Resource
-    private FileManager fileManager;
 
 
     /**
@@ -227,7 +229,25 @@ public class PictureController {
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize),
                 pictureService.getQueryWrapper(pictureQueryRequest));
 
-        Page<PictureVO> pictureVOPage = pictureService.getPictureVOPage(picturePage);
+
+        Page<PictureVO> pictureVOPage = pictureService.PicturePageToVOPage(picturePage);
+        return Result.success(pictureVOPage);
+
+    }
+
+    /**
+     * 分页查询图片，用户用，查询缓存的
+     * @param pictureQueryRequest 分页请求dto
+     * @return  脱敏后 分页内容
+     */
+    @PostMapping("/list/page/vo/cache")
+    public Result<Page<PictureVO>> getPictureListVOWithCache(@RequestBody PictureQueryRequest pictureQueryRequest){
+        ThrowUtils.throwIf(pictureQueryRequest==null,ErrorEnum.PARAMS_ERROR);
+        //防止爬虫
+        ThrowUtils.throwIf(pictureQueryRequest.getPageSize()>20,ErrorEnum.PARAMS_ERROR,"页面数量过大");
+
+        Page<PictureVO> pictureVOPage = pictureService.getPictureVOPage(pictureQueryRequest);
+
         return Result.success(pictureVOPage);
 
     }
@@ -256,5 +276,19 @@ public class PictureController {
         Boolean isOk = pictureService.doPictureReview(pictureReviewRequest, request);
         return Result.success(isOk);
     }
+
+    @PostMapping("/upload/batch")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public Result<Integer> uploadPictureByBatch(
+            @RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,
+            HttpServletRequest request
+    ) {
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorEnum.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        int uploadCount = pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUser);
+        ThrowUtils.throwIf(uploadCount<=0,ErrorEnum.OPERATION_ERROR,"图片内部解析错误");
+        return Result.success(uploadCount);
+    }
+
 
 }
