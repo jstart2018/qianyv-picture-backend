@@ -2,10 +2,8 @@ package com.jstart.qianyvpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureReviewRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.jstart.qianyvpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
+import com.jstart.qianyvpicturebackend.model.dto.picture.*;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jstart.qianyvpicturebackend.model.entity.User;
@@ -39,6 +37,22 @@ public interface PictureService extends IService<Picture> {
     PictureVO uploadPicture(Object inputSource,
                             PictureUploadRequest pictureUploadRequest,
                             User loginUser);
+
+    /**
+     * 删除图片
+     * @param deleteRequest
+     * @param loginUser
+     * @return
+     */
+    boolean deletePicture(DeleteRequest deleteRequest, User loginUser);
+
+    /**
+     * 用户编辑图片
+     * @param pictureEditRequest
+     * @param loginUser
+     * @return
+     */
+    boolean editPicture(PictureEditRequest pictureEditRequest, User loginUser);
 
 
     /**
@@ -98,5 +112,13 @@ public interface PictureService extends IService<Picture> {
      * 清理图片COS中的对象：
      */
     @Async
-    void clearPictureFile(Picture oldPicture);
+    void clearPictureFile(Picture oldPicture,Long spaceId);
+
+    /**
+     * 校验 改动图片时所需要的权限
+     * @param picture
+     * @param loginUser
+     */
+    void checkPictureAuth(Picture picture,User loginUser);
+
 }
