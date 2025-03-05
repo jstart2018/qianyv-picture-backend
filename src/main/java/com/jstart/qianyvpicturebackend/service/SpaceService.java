@@ -40,10 +40,6 @@ public interface SpaceService extends IService<Space> {
      */
     SpaceVO getSpaceVO(Space space, HttpServletRequest request);
 
-    /**
-     * 获取分页图片封装
-     */
-    Page<SpaceVO> SpacePageToVOPage(Page<Space> spacePage);
 
     /**
      * 根据空间级别填充空间容量

@@ -182,26 +182,6 @@ public class SpaceController {
         return Result.success(spacePage);
     }
 
-    /**
-     * 分页查询空间，用户用
-     * @param spaceQueryRequest 分页请求dto
-     * @return  脱敏后 分页内容
-     */
-    @PostMapping("/list/page/vo")
-    public Result<Page<SpaceVO>> getSpaceListVO(@RequestBody SpaceQueryRequest spaceQueryRequest){
-        ThrowUtils.throwIf(spaceQueryRequest==null,ErrorEnum.PARAMS_ERROR);
-        //防止爬虫
-        ThrowUtils.throwIf(spaceQueryRequest.getPageSize()>20,ErrorEnum.PARAMS_ERROR,"页面数量过大");
-
-        int current = spaceQueryRequest.getCurrent();
-        int pageSize = spaceQueryRequest.getPageSize();
-        Page<Space> spacePage = spaceService.page(new Page<>(current, pageSize),
-                spaceService.getQueryWrapper(spaceQueryRequest));
-
-
-        Page<SpaceVO> spaceVOPage = spaceService.SpacePageToVOPage(spacePage);
-        return Result.success(spaceVOPage);
-    }
 
     /**
      * 查看空间级别列表

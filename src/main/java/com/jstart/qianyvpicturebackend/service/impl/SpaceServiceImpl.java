@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceLevelEnum;
+import com.jstart.qianyvpicturebackend.common.enums.SpaceRoleEnum;
+import com.jstart.qianyvpicturebackend.common.enums.SpaceTypeEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
 import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
@@ -16,12 +18,14 @@ import com.jstart.qianyvpicturebackend.model.dto.space.SpaceAddRequest;
 import com.jstart.qianyvpicturebackend.model.dto.space.SpaceQueryRequest;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.jstart.qianyvpicturebackend.model.entity.Space;
+import com.jstart.qianyvpicturebackend.model.entity.SpaceUser;
 import com.jstart.qianyvpicturebackend.model.entity.User;
 import com.jstart.qianyvpicturebackend.model.vo.PictureVO;
 import com.jstart.qianyvpicturebackend.model.vo.SpaceVO;
 import com.jstart.qianyvpicturebackend.model.vo.UserVO;
 import com.jstart.qianyvpicturebackend.service.SpaceService;
 import com.jstart.qianyvpicturebackend.mapper.SpaceMapper;
+import com.jstart.qianyvpicturebackend.service.SpaceUserService;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -48,6 +52,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Resource
     private UserService userService;
+    @Resource
+    private SpaceUserService spaceUserService;
     //编程式事务管理器
     @Resource
     private TransactionTemplate transactionTemplate;
@@ -65,7 +71,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (!add){
             ThrowUtils.throwIf(ObjUtil.isNull(id), ErrorEnum.PARAMS_ERROR, "id 不能为空");
         }
-        if (spaceName == ""){
+        if (Objects.equals(spaceName, "")){
             throw new BusinessException(ErrorEnum.PARAMS_ERROR,"空间名称不能为空");
         }
         ThrowUtils.throwIf(spaceLevelEnum == null, ErrorEnum.PARAMS_ERROR, "空间等级不能为空");
@@ -87,12 +93,13 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         Integer spaceLevel = spaceQueryRequest.getSpaceLevel();
         String sortField = spaceQueryRequest.getSortField();
         String sortOrder = spaceQueryRequest.getSortOrder();
-
+        Integer spaceType = spaceQueryRequest.getSpaceType();
 
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
         queryWrapper.eq(ObjUtil.isNotNull(userId), "userId", userId);
         queryWrapper.like(StrUtil.isNotBlank(spaceName), "spaceName", spaceName);
         queryWrapper.eq(ObjUtil.isNotNull(spaceLevel), "spaceLevel", spaceLevel);
+        queryWrapper.eq(ObjUtil.isNotNull(spaceType), "spaceType", spaceType);
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
 
         queryWrapper.orderBy(StrUtil.isNotBlank(sortField), sortOrder.equals("ascend"), sortField);
@@ -115,49 +122,6 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     }
 
     @Override
-    public Page<SpaceVO> SpacePageToVOPage(Page<Space> spacePage) {
-        List<Space> spaceList = spacePage.getRecords();
-
-        Page<SpaceVO> spaceVOPage = new Page<>(spacePage.getCurrent(), spacePage.getSize(), spacePage.getTotal());
-        if (CollUtil.isEmpty(spaceList)) {
-            return spaceVOPage;
-        }
-        // 对象列表 => 封装对象列表
-        List<SpaceVO> spaceVOList = spaceList.stream()
-                .map(SpaceVO::objToVO)
-                .collect(Collectors.toList());
-        // 1. 关联查询用户信息
-        Set<Long> userIdSet = spaceList.stream()
-                .map(Space::getUserId)
-                .collect(Collectors.toSet());
-        /**
-         * User::getId 是一个方法引用，表示根据 User 对象的 getId() 方法返回的 ID 对用户进行分组。
-         * groupingBy() 会生成一个 Map，其中每个键是用户的 ID，值是该 ID 对应的 User 对象的列表。
-         * 例如，如果用户 ID 为 1 的用户有多个，返回的 Map<Long, List<User>> 中，
-         * 键为 1 的值将是一个包含所有 ID 为 1 的用户对象的列表。
-         */
-        Map<Long, List<User>> userIdUserListMap = userService
-                .listByIds(userIdSet)
-                .stream()
-                .collect(Collectors.groupingBy(User::getId));
-        // 2. 填充信息
-        spaceVOList.forEach(spaceVO -> {
-            Long userId = spaceVO.getUserId();
-            User user = null;
-            if (userIdUserListMap.containsKey(userId)) {
-                user = userIdUserListMap.get(userId).get(0);
-            } else
-                throw new BusinessException(ErrorEnum.SYSTEM_ERROR, "space转VO错误");
-            UserVO userVO = new UserVO();
-            BeanUtils.copyProperties(user, userVO);
-            spaceVO.setUserVO(userVO);
-        });
-        spaceVOPage.setRecords(spaceVOList);
-        return spaceVOPage;
-    }
-
-
-    @Override
     public void fillSpaceBySpaceLevel(Space space) {
         ThrowUtils.throwIf(space == null, ErrorEnum.PARAMS_ERROR, "空间对象不能为空");
         ThrowUtils.throwIf(space.getSpaceLevel() == null, ErrorEnum.PARAMS_ERROR, "空间级别错误");
@@ -175,23 +139,24 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Override
     public long createSpace(SpaceAddRequest spaceAddRequest, HttpServletRequest request) {
-        //获取登录用户
+        //1、获取登录用户校验权限
         User loginUser = userService.getLoginUser(request);
         Long userId = loginUser.getId();
         if (spaceAddRequest.getSpaceLevel() != null)
+            //不是管理员不能设置等级
             ThrowUtils.throwIf(!loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE),
                     ErrorEnum.NO_AUTH_ERROR,"没有权限设置空间等级");
-        //校验空间请求体
+        //2、校验空间请求体
         Space space = new Space();
         BeanUtils.copyProperties(spaceAddRequest,space);
-        //填充空间信息
+        //填充空间信息的默认值:空间名、级别、类型
         if(StrUtil.isBlank(space.getSpaceName())){
             space.setSpaceName(loginUser.getUserName()+"的私有空间");
         }
-        space.setUserId(userId);
-        this.validSpace(space,true);
-
         space.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
+        space.setUserId(userId);
+        space.setSpaceType(SpaceTypeEnum.PRIVATE.getValue());
+        this.validSpace(space,true);
         this.fillSpaceBySpaceLevel(space);
         // 为当前用户获取一个锁对象
         Object lock = userLockMap.computeIfAbsent(userId, k -> new Object());
@@ -199,12 +164,25 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             Long newSpaceId = transactionTemplate.execute(status -> {
                 try {
                     // 先查询数据库确认该用户是否已经有私人空间
-                    if (this.lambdaQuery().eq(Space::getUserId, userId).exists()) {
-                        throw new BusinessException(ErrorEnum.PARAMS_ERROR, "每个用户智能创建一个私有空间");
+                    if (this.lambdaQuery()
+                            .eq(Space::getUserId, userId)
+                            .eq(Space::getSpaceType,spaceAddRequest.getSpaceType())
+                            .exists()) {
+                        throw new BusinessException(ErrorEnum.PARAMS_ERROR, "每类空间只能创建一个");
                     }
                     // 创建私人空间的逻辑
                     boolean saveResult = this.save(space);
                     ThrowUtils.throwIf(!saveResult, ErrorEnum.OPERATION_ERROR);
+
+                    //如果插入的是团队空间，为创建者设置为管理员身份
+                    if (space.getSpaceType().equals(SpaceTypeEnum.TEAM.getValue())){
+                        SpaceUser spaceUser = new SpaceUser();
+                        spaceUser.setUserId(userId);
+                        spaceUser.setSpaceId(space.getId());
+                        spaceUser.setSpaceRole(SpaceRoleEnum.ADMIN.getValue());
+                        boolean saveUserSaveResult = spaceUserService.save(spaceUser);
+                        ThrowUtils.throwIf(saveUserSaveResult, ErrorEnum.OPERATION_ERROR,"添加空间成员关系失败");
+                    }
                     return space.getId();
                 } finally {
                     // 清理锁对象，防止内存泄漏
