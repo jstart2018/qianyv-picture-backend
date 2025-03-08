@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
+import com.jstart.qianyvpicturebackend.auth.Manager.SpaceUserAuthManager;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
@@ -40,6 +41,8 @@ public class SpaceController {
     private UserService userService;
     @Resource
     private SpaceService spaceService;
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
 
     @PostMapping("/add")
@@ -67,7 +70,8 @@ public class SpaceController {
         Space space = spaceService.getById(id);
         ThrowUtils.throwIf(space==null, ErrorEnum.NOT_FOUND_ERROR,"没有该空间");
         //判断是否有权限删除，只有本人或管理员才能删除
-        if(loginUser.getId() != space.getUserId() && !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)){
+        System.out.println(loginUser.getId().equals(space.getUserId()));
+        if(!loginUser.getId().equals(space.getUserId()) && !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)){
             throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
         }
         //删除数据库数据
@@ -152,7 +156,7 @@ public class SpaceController {
      */
     @PostMapping("/get/vo")
     @AuthCheck
-    public Result<SpaceVO> getSpaceVOById(Long id){
+    public Result<SpaceVO> getSpaceVOById(Long id, HttpServletRequest request){
         ThrowUtils.throwIf(id == null||id<=0,ErrorEnum.PARAMS_ERROR);
         //查询数据库
         Space space = spaceService.getById(id);
@@ -160,6 +164,12 @@ public class SpaceController {
 
         SpaceVO spaceVO = new SpaceVO();
         BeanUtils.copyProperties(space,spaceVO);
+
+        //获取当前用户在该空间拥有的权限
+        List<String> permissionList = spaceUserAuthManager
+                .getPermissionList(space, userService.getLoginUser(request));
+        spaceVO.setPermissionList(permissionList);
+
 
         return Result.success(spaceVO);
     }

@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.base.Preconditions;
+import com.jstart.qianyvpicturebackend.auth.StpKit;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.enums.RoleEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
@@ -106,7 +107,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         ThrowUtils.throwIf(user==null,ErrorEnum.OPERATION_ERROR,"密码错误或用户不存在");
 
         //4、记录登录状态
-        request.getSession().setAttribute(UserConstant.user_login_status,user);
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATUS,user);
+        //记录登录态到Sa-token中，便于空间鉴权时使用，注意保证该用户信息与SpringSession中信息过期时间一致
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATUS,user);
 
         //5、返回脱敏后用户数据
         UserVO userVO = new UserVO();
@@ -118,7 +122,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User getLoginUser(HttpServletRequest request) {
         //1、获取用户session的值
-        User user = (User)request.getSession().getAttribute(UserConstant.user_login_status);
+        User user = (User)request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         ThrowUtils.throwIf(user == null,ErrorEnum.NOT_LOGIN_ERROR);
         //2、根据返回的用户值，查询数据库（避免数据已经被更新，而session缓存中没有更新）
         User u = this.baseMapper.selectById(user.getId());
@@ -131,11 +135,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Boolean logout(HttpServletRequest request) {
         //判断用户是否已经登录，已经登录才能注销
-        Object attribute = request.getSession().getAttribute(UserConstant.user_login_status);
+        Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         ThrowUtils.throwIf(attribute == null,ErrorEnum.NOT_LOGIN_ERROR);
         //获取session，删除对应的key
         try {
-            request.getSession().removeAttribute(UserConstant.user_login_status);
+            request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATUS);
         } catch (Exception e) {
             throw new BusinessException(ErrorEnum.OPERATION_ERROR,"注销失败");
         }

@@ -214,8 +214,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //查询数据库数据是否存在
         Picture picture = this.getById(id);
         ThrowUtils.throwIf(picture==null, ErrorEnum.NOT_FOUND_ERROR,"没有该图片");
-        //校验图片
-        this.checkPictureAuth(picture,loginUser);
+        //校验图片权限
+        //已经用注解校验权限
+        //this.checkPictureAuth(picture,loginUser);
 
         this.clearPictureFile(picture,picture.getSpaceId());
 
@@ -249,7 +250,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Picture oldPicture = this.getById(picture.getId());
         ThrowUtils.throwIf(oldPicture==null,ErrorEnum.NOT_FOUND_ERROR);
         //校验权限
-        this.checkPictureAuth(picture,loginUser);
+        //已经使用注解校验权限
+        //this.checkPictureAuth(picture,loginUser);
         //校验参数合法性
         this.validPicture(picture);
         //图片审核数据处理：

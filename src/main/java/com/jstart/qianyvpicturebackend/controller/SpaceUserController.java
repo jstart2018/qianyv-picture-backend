@@ -1,6 +1,8 @@
 package com.jstart.qianyvpicturebackend.controller;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.jstart.qianyvpicturebackend.auth.Constant.SpaceUserPermissionConstant;
+import com.jstart.qianyvpicturebackend.auth.annotation.SaSpaceCheckPermission;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
@@ -40,6 +42,7 @@ public class SpaceUserController {
      * 添加成员到空间
      */
     @PostMapping("/add")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorEnum.PARAMS_ERROR);
         long id = spaceUserService.addSpaceUser(spaceUserAddRequest);
@@ -50,6 +53,7 @@ public class SpaceUserController {
      * 从空间移除成员
      */
     @PostMapping("/delete")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
@@ -69,6 +73,7 @@ public class SpaceUserController {
      * 查询某个成员在某个空间的信息
      */
     @PostMapping("/get")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         // 参数校验
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorEnum.PARAMS_ERROR);
@@ -85,6 +90,7 @@ public class SpaceUserController {
      * 查询成员信息列表
      */
     @PostMapping("/list")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<List<SpaceUserVO>> listSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest,
                                                          HttpServletRequest request) {
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorEnum.PARAMS_ERROR);
@@ -98,6 +104,7 @@ public class SpaceUserController {
      * 编辑成员信息（设置权限）
      */
     @PostMapping("/edit")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest,
                                                HttpServletRequest request) {
         if (spaceUserEditRequest == null || spaceUserEditRequest.getId() <= 0) {
@@ -122,6 +129,7 @@ public class SpaceUserController {
      * 查询我加入的团队空间列表
      */
     @PostMapping("/list/my")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<List<SpaceUserVO>> listMyTeamSpace(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         SpaceUserQueryRequest spaceUserQueryRequest = new SpaceUserQueryRequest();

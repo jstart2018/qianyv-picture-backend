@@ -10,19 +10,20 @@ import lombok.Data;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 空间
  * @TableName space
  */
-@TableName(value ="space")
 @Data
 public class SpaceVO implements Serializable {
+    private static final long serialVersionUID = 7841082564759766321L;
     /**
      * id
      */
-    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
@@ -79,6 +80,13 @@ public class SpaceVO implements Serializable {
      * 创建的用户
      */
     private UserVO userVO;
+
+    /**
+     * 权限列表
+     */
+    private List<String> permissionList = new ArrayList<>();
+
+
 
 
     public static Space VOToObj(SpaceVO spaceVO) {

@@ -1,6 +1,8 @@
 package com.jstart.qianyvpicturebackend.exception;
 
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,5 +29,18 @@ public class GlobalExceptionHandler {
         log.error("RuntimeException", e);
         return Result.error(ErrorEnum.SYSTEM_ERROR);
     }
+
+    @ExceptionHandler(NotLoginException.class)
+    public Result<?> notLoginException(NotLoginException e) {
+        log.error("NotLoginException", e);
+        return Result.error(ErrorEnum.NOT_LOGIN_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(NotPermissionException.class)
+    public Result<?> notPermissionExceptionHandler(NotPermissionException e) {
+        log.error("NotPermissionException", e);
+        return Result.error(ErrorEnum.NO_AUTH_ERROR, e.getMessage());
+    }
+
 
 }

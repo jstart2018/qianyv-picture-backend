@@ -5,7 +5,7 @@ public interface UserConstant {
     /**
      * 用户登录态键
      */
-    String user_login_status = "user_login";
+    String USER_LOGIN_STATUS = "user_login";
 
     // region 权限
     /**

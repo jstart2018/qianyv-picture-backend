@@ -29,6 +29,7 @@ import com.jstart.qianyvpicturebackend.service.SpaceUserService;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,6 +54,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     @Resource
     private UserService userService;
     @Resource
+    @Lazy
     private SpaceUserService spaceUserService;
     //编程式事务管理器
     @Resource
