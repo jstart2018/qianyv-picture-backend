@@ -1,7 +1,5 @@
 package com.jstart.qianyvpicturebackend.controller;
 
-import cn.hutool.json.JSONUtil;
-
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
 import com.jstart.qianyvpicturebackend.auth.Manager.SpaceUserAuthManager;
@@ -10,7 +8,7 @@ import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceLevelEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.space.SpaceAddRequest;
 import com.jstart.qianyvpicturebackend.model.dto.space.SpaceEditRequest;
@@ -47,7 +45,7 @@ public class SpaceController {
 
     @PostMapping("/add")
     public Result<Long> createSpace(SpaceAddRequest spaceAddRequest,HttpServletRequest request){
-        ThrowUtils.throwIf(spaceAddRequest == null,ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceAddRequest == null, ResultEnum.PARAMS_ERROR);
         long spaceId = spaceService.createSpace(spaceAddRequest,request);
         return Result.success(spaceId);
     }
@@ -63,20 +61,20 @@ public class SpaceController {
     public Result<Boolean> deleteSpace(@RequestBody DeleteRequest deleteRequest,
                                        HttpServletRequest request){
         ThrowUtils.throwIf(deleteRequest==null||deleteRequest.getId()==null||deleteRequest.getId() <= 0,
-                ErrorEnum.PARAMS_ERROR);
+                ResultEnum.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         Long id = deleteRequest.getId();
         //查询数据库数据是否存在
         Space space = spaceService.getById(id);
-        ThrowUtils.throwIf(space==null, ErrorEnum.NOT_FOUND_ERROR,"没有该空间");
+        ThrowUtils.throwIf(space==null, ResultEnum.NOT_FOUND_ERROR,"没有该空间");
         //判断是否有权限删除，只有本人或管理员才能删除
         System.out.println(loginUser.getId().equals(space.getUserId()));
         if(!loginUser.getId().equals(space.getUserId()) && !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)){
-            throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
+            throw new BusinessException(ResultEnum.NO_AUTH_ERROR);
         }
         //删除数据库数据
         boolean result = spaceService.removeById(id);
-        ThrowUtils.throwIf(!result,ErrorEnum.OPERATION_ERROR,"操作数据库失败");
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR,"操作数据库失败");
         return Result.success(result);
     }
 
@@ -90,7 +88,7 @@ public class SpaceController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Boolean> updateSpace(@RequestBody SpaceUpdateRequest spaceUpdateRequest,
                                          HttpServletRequest request){
-        ThrowUtils.throwIf(spaceUpdateRequest==null,ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUpdateRequest==null, ResultEnum.PARAMS_ERROR);
         //转移实体
         Space space = new Space();
         BeanUtils.copyProperties(spaceUpdateRequest,space);
@@ -100,7 +98,7 @@ public class SpaceController {
         spaceService.fillSpaceBySpaceLevel(space);
         //操作数据库
         boolean result = spaceService.updateById(space);
-        ThrowUtils.throwIf(!result,ErrorEnum.SYSTEM_ERROR,"操作数据库失败");
+        ThrowUtils.throwIf(!result, ResultEnum.SYSTEM_ERROR,"操作数据库失败");
         return Result.success(result);
     }
 
@@ -113,24 +111,24 @@ public class SpaceController {
     @PostMapping("/edit")
     public Result<Boolean> editSpace(SpaceEditRequest spaceEditRequest, HttpServletRequest request){
         if(spaceEditRequest==null||spaceEditRequest.getId() <= 0){
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         // DTO转实体
         Space space = new Space();
         BeanUtils.copyProperties(spaceEditRequest,space);
         //参数 如果该id的空间不存在：
         Space oldSpace = spaceService.getById(space.getId());
-        ThrowUtils.throwIf(oldSpace==null,ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldSpace==null, ResultEnum.NOT_FOUND_ERROR);
         //校验权限
         User loginUser = userService.getLoginUser(request);
         if (!oldSpace.getUserId().equals(space.getUserId()) && !loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE)){
-            throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
+            throw new BusinessException(ResultEnum.NO_AUTH_ERROR);
         }
         //校验参数合法性
         spaceService.validSpace(space,false);
         //操作数据库
         boolean result = spaceService.updateById(space);
-        ThrowUtils.throwIf(!result,ErrorEnum.OPERATION_ERROR,"操作数据库失败");
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR,"操作数据库失败");
         return Result.success(result);
     }
 
@@ -142,10 +140,10 @@ public class SpaceController {
     @PostMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Space> getSpaceById(Long id){
-        ThrowUtils.throwIf(id == null||id<=0,ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id == null||id<=0, ResultEnum.PARAMS_ERROR);
         //查询数据库
         Space space = spaceService.getById(id);
-        ThrowUtils.throwIf(space!=null,ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(space!=null, ResultEnum.NOT_FOUND_ERROR);
         return Result.success(space);
     }
 
@@ -157,10 +155,10 @@ public class SpaceController {
     @PostMapping("/get/vo")
     @AuthCheck
     public Result<SpaceVO> getSpaceVOById(Long id, HttpServletRequest request){
-        ThrowUtils.throwIf(id == null||id<=0,ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id == null||id<=0, ResultEnum.PARAMS_ERROR);
         //查询数据库
         Space space = spaceService.getById(id);
-        ThrowUtils.throwIf(space!=null,ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(space!=null, ResultEnum.NOT_FOUND_ERROR);
 
         SpaceVO spaceVO = new SpaceVO();
         BeanUtils.copyProperties(space,spaceVO);
@@ -183,7 +181,7 @@ public class SpaceController {
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Page<Space>> getSpaceList(@RequestBody SpaceQueryRequest spaceQueryRequest){
-        ThrowUtils.throwIf(spaceQueryRequest==null,ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceQueryRequest==null, ResultEnum.PARAMS_ERROR);
         int current = spaceQueryRequest.getCurrent();
         int pageSize = spaceQueryRequest.getPageSize();
 

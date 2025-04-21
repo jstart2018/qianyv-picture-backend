@@ -117,6 +117,11 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
+        <!-- websocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
 
 
     </dependencies>
@@ -146,7 +151,7 @@
             <id>central</id>    <!--表示要替换中央仓库-->
             <name>aliyun maven</name> <!--对该仓库的描述，非必须-->
             <url>https://maven.aliyun.com/repository/central</url> <!--仓库地址-->
-            <layout>default</layout> <!--遵循 Maven 的标准目录结构：g a v 形式-->
+            <layout>default</layout> <!--遵循 Maven 的标准目录结构：g interceptor v 形式-->
             <releases>
                 <enabled>true</enabled> <!-- 表示允许从该仓库获取发布版本（releases版本）-->
             </releases>

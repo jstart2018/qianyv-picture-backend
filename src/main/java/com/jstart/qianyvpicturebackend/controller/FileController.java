@@ -5,14 +5,11 @@ import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.common.manager.CosManager;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.qcloud.cos.model.COSObject;
 import com.qcloud.cos.model.COSObjectInputStream;
 import com.qcloud.cos.utils.IOUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,7 +53,7 @@ public class FileController {
             return Result.success(filepath);
         } catch (Exception e) {
             log.error("file upload error, filepath = " + filepath, e);
-            throw new BusinessException(ErrorEnum.SYSTEM_ERROR, "上传失败");
+            throw new BusinessException(ResultEnum.SYSTEM_ERROR, "上传失败");
         } finally {
             if (file != null) {
                 // 删除临时文件
@@ -95,7 +92,7 @@ public class FileController {
 
         } catch (Exception e) {
             log.error("file download error, filepath = " + filepath, e);
-            throw new BusinessException(ErrorEnum.SYSTEM_ERROR, "下载失败");
+            throw new BusinessException(ResultEnum.SYSTEM_ERROR, "下载失败");
         } finally {
             if (cosObjectInput != null) {
                 cosObjectInput.close();

@@ -1,33 +1,27 @@
 package com.jstart.qianyvpicturebackend.service.impl;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceLevelEnum;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceRoleEnum;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceTypeEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.space.SpaceAddRequest;
 import com.jstart.qianyvpicturebackend.model.dto.space.SpaceQueryRequest;
-import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.jstart.qianyvpicturebackend.model.entity.Space;
 import com.jstart.qianyvpicturebackend.model.entity.SpaceUser;
 import com.jstart.qianyvpicturebackend.model.entity.User;
-import com.jstart.qianyvpicturebackend.model.vo.PictureVO;
 import com.jstart.qianyvpicturebackend.model.vo.SpaceVO;
 import com.jstart.qianyvpicturebackend.model.vo.UserVO;
 import com.jstart.qianyvpicturebackend.service.SpaceService;
 import com.jstart.qianyvpicturebackend.mapper.SpaceMapper;
 import com.jstart.qianyvpicturebackend.service.SpaceUserService;
 import com.jstart.qianyvpicturebackend.service.UserService;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -37,7 +31,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * @author 28435
@@ -62,7 +55,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Override
     public void validSpace(Space space, boolean add) {
-        ThrowUtils.throwIf(space == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(space == null, ResultEnum.PARAMS_ERROR);
         // 从对象中取值
         Long id = space.getId();
         String spaceName = space.getSpaceName();
@@ -71,14 +64,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
         // 修改数据时，id 不能为空，有参数则校验
         if (!add){
-            ThrowUtils.throwIf(ObjUtil.isNull(id), ErrorEnum.PARAMS_ERROR, "id 不能为空");
+            ThrowUtils.throwIf(ObjUtil.isNull(id), ResultEnum.PARAMS_ERROR, "id 不能为空");
         }
         if (Objects.equals(spaceName, "")){
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR,"空间名称不能为空");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR,"空间名称不能为空");
         }
-        ThrowUtils.throwIf(spaceLevelEnum == null, ErrorEnum.PARAMS_ERROR, "空间等级不能为空");
+        ThrowUtils.throwIf(spaceLevelEnum == null, ResultEnum.PARAMS_ERROR, "空间等级不能为空");
         if (spaceLevel != null && spaceLevelEnum == null) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR, "没有该空间等级");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR, "没有该空间等级");
         }
     }
 
@@ -125,10 +118,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Override
     public void fillSpaceBySpaceLevel(Space space) {
-        ThrowUtils.throwIf(space == null, ErrorEnum.PARAMS_ERROR, "空间对象不能为空");
-        ThrowUtils.throwIf(space.getSpaceLevel() == null, ErrorEnum.PARAMS_ERROR, "空间级别错误");
+        ThrowUtils.throwIf(space == null, ResultEnum.PARAMS_ERROR, "空间对象不能为空");
+        ThrowUtils.throwIf(space.getSpaceLevel() == null, ResultEnum.PARAMS_ERROR, "空间级别错误");
         SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getEnumByValue(space.getSpaceLevel());
-        ThrowUtils.throwIf(spaceLevelEnum == null, ErrorEnum.PARAMS_ERROR, "没有该空间级别");
+        ThrowUtils.throwIf(spaceLevelEnum == null, ResultEnum.PARAMS_ERROR, "没有该空间级别");
         //当管理员没有设置容量时才赋值
         if (space.getMaxSize() == null || space.getMaxSize() < 0) {
             space.setMaxSize(spaceLevelEnum.getMaxSize());
@@ -147,7 +140,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (spaceAddRequest.getSpaceLevel() != null)
             //不是管理员不能设置等级
             ThrowUtils.throwIf(!loginUser.getUserRole().equals(UserConstant.ADMIN_ROLE),
-                    ErrorEnum.NO_AUTH_ERROR,"没有权限设置空间等级");
+                    ResultEnum.NO_AUTH_ERROR,"没有权限设置空间等级");
         //2、校验空间请求体
         Space space = new Space();
         BeanUtils.copyProperties(spaceAddRequest,space);
@@ -170,11 +163,11 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                             .eq(Space::getUserId, userId)
                             .eq(Space::getSpaceType,spaceAddRequest.getSpaceType())
                             .exists()) {
-                        throw new BusinessException(ErrorEnum.PARAMS_ERROR, "每类空间只能创建一个");
+                        throw new BusinessException(ResultEnum.PARAMS_ERROR, "每类空间只能创建一个");
                     }
                     // 创建私人空间的逻辑
                     boolean saveResult = this.save(space);
-                    ThrowUtils.throwIf(!saveResult, ErrorEnum.OPERATION_ERROR);
+                    ThrowUtils.throwIf(!saveResult, ResultEnum.OPERATION_ERROR);
 
                     //如果插入的是团队空间，为创建者设置为管理员身份
                     if (space.getSpaceType().equals(SpaceTypeEnum.TEAM.getValue())){
@@ -183,7 +176,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                         spaceUser.setSpaceId(space.getId());
                         spaceUser.setSpaceRole(SpaceRoleEnum.ADMIN.getValue());
                         boolean saveUserSaveResult = spaceUserService.save(spaceUser);
-                        ThrowUtils.throwIf(saveUserSaveResult, ErrorEnum.OPERATION_ERROR,"添加空间成员关系失败");
+                        ThrowUtils.throwIf(saveUserSaveResult, ResultEnum.OPERATION_ERROR,"添加空间成员关系失败");
                     }
                     return space.getId();
                 } finally {

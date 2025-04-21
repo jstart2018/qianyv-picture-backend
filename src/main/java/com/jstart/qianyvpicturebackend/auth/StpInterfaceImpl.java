@@ -17,7 +17,7 @@ import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceRoleEnum;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceTypeEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.jstart.qianyvpicturebackend.model.entity.Space;
 import com.jstart.qianyvpicturebackend.model.entity.SpaceUser;
@@ -76,7 +76,7 @@ public class StpInterfaceImpl implements StpInterface {
         // 获取 userId
         User loginUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(UserConstant.USER_LOGIN_STATUS);
         if (loginUser == null) {
-            throw new BusinessException(ErrorEnum.NO_AUTH_ERROR, "用户未登录");
+            throw new BusinessException(ResultEnum.NO_AUTH_ERROR, "用户未登录");
         }
         Long userId = loginUser.getId();
         // 优先从上下文中获取 SpaceUser 对象
@@ -89,7 +89,7 @@ public class StpInterfaceImpl implements StpInterface {
         if (spaceUserId != null) {
             spaceUser = spaceUserService.getById(spaceUserId);
             if (spaceUser == null) {
-                throw new BusinessException(ErrorEnum.NOT_FOUND_ERROR, "未找到空间用户信息");
+                throw new BusinessException(ResultEnum.NOT_FOUND_ERROR, "未找到空间用户信息");
             }
             // 取出当前登录用户对应的 spaceUser
             SpaceUser loginSpaceUser = spaceUserService.lambdaQuery()
@@ -116,7 +116,7 @@ public class StpInterfaceImpl implements StpInterface {
                     .select(Picture::getId, Picture::getSpaceId, Picture::getUserId)
                     .one();
             if (picture == null) {
-                throw new BusinessException(ErrorEnum.NOT_FOUND_ERROR, "未找到图片信息");
+                throw new BusinessException(ResultEnum.NOT_FOUND_ERROR, "未找到图片信息");
             }
             spaceId = picture.getSpaceId();
             // 公共图库，仅本人或管理员可操作
@@ -132,7 +132,7 @@ public class StpInterfaceImpl implements StpInterface {
         // 获取 Space 对象
         Space space = spaceService.getById(spaceId);
         if (space == null) {
-            throw new BusinessException(ErrorEnum.NOT_FOUND_ERROR, "未找到空间信息");
+            throw new BusinessException(ResultEnum.NOT_FOUND_ERROR, "未找到空间信息");
         }
         // 根据 Space 类型判断权限
         if (space.getSpaceType() == SpaceTypeEnum.PRIVATE.getValue()) {

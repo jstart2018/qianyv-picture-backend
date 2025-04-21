@@ -3,16 +3,14 @@ package com.jstart.qianyvpicturebackend.common.manager;
 import cn.hutool.core.io.FileUtil;
 import com.jstart.qianyvpicturebackend.config.CosClientConfig;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.qcloud.cos.COSClient;
-import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.model.*;
 import com.qcloud.cos.model.ciModel.persistence.PicOperations;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,7 +89,7 @@ public class CosManager {
         try {
             cosClient.deleteObject(cosClientConfig.getBucket(),key);
         } catch (Exception e) {
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR,"COS中删除对象异常");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR,"COS中删除对象异常");
         }
     }
 

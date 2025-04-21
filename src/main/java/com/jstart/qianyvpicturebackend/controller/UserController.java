@@ -7,7 +7,7 @@ import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.user.*;
 import com.jstart.qianyvpicturebackend.model.entity.User;
@@ -45,7 +45,7 @@ public class UserController {
     @PostMapping("register")
     public Result<Long> register(@RequestBody UserRegisterDTO userRegisterDTO) {
         //如果请求参数为空，直接抛异常
-        ThrowUtils.throwIf(userRegisterDTO == null, ErrorEnum.PARAMS_ERROR, "参数为空");
+        ThrowUtils.throwIf(userRegisterDTO == null, ResultEnum.PARAMS_ERROR, "参数为空");
         log.info("userDTO:{}", userRegisterDTO);
         Long result = userService.userRegister(userRegisterDTO);
         return Result.success(result);
@@ -61,7 +61,7 @@ public class UserController {
     @PostMapping("userLogin")
     public Result<UserVO> userLogin(@RequestBody UserLoginDTO userLoginDTO, HttpServletRequest request) {
         //如果请求参数为空，直接抛异常
-        ThrowUtils.throwIf(userLoginDTO == null, ErrorEnum.PARAMS_ERROR, "参数为空");
+        ThrowUtils.throwIf(userLoginDTO == null, ResultEnum.PARAMS_ERROR, "参数为空");
         log.info("userDTO:{}", userLoginDTO);
         UserVO userVO = userService.userLogin(userLoginDTO, request);
         return Result.success(userVO);
@@ -102,14 +102,14 @@ public class UserController {
     @PostMapping("add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
-        ThrowUtils.throwIf(userAddRequest == null, ErrorEnum.PARAMS_ERROR, "参数为空");
+        ThrowUtils.throwIf(userAddRequest == null, ResultEnum.PARAMS_ERROR, "参数为空");
         log.info("userDTO:{}", userAddRequest);
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
         //添加默认密码 123157
         user.setUserPassword(userService.encryptPassword("123157"));
         boolean result = userService.save(user);
-        ThrowUtils.throwIf(!result, ErrorEnum.SYSTEM_ERROR);
+        ThrowUtils.throwIf(!result, ResultEnum.SYSTEM_ERROR);
         Long userId = user.getId();
         return Result.success(userId);
     }
@@ -121,9 +121,9 @@ public class UserController {
     @GetMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<User> getUserById(long id) {
-        ThrowUtils.throwIf(id <= 0, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id <= 0, ResultEnum.PARAMS_ERROR);
         User user = userService.getById(id);
-        ThrowUtils.throwIf(user == null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(user == null, ResultEnum.NOT_FOUND_ERROR);
         return Result.success(user);
     }
 
@@ -144,7 +144,7 @@ public class UserController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         boolean b = userService.removeById(deleteRequest.getId());
         return Result.success(b);
@@ -157,12 +157,12 @@ public class UserController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
         boolean result = userService.updateById(user);
-        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR);
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR);
         return Result.success(true);
     }
 
@@ -174,12 +174,12 @@ public class UserController {
     @PostMapping("/list/page/vo")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
-        ThrowUtils.throwIf(userQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(userQueryRequest == null, ResultEnum.PARAMS_ERROR);
         long current = userQueryRequest.getCurrent();
         long pageSize = userQueryRequest.getPageSize();
         //进行分页查询
         Page<User> userPage = userService.page(new Page<>(current, pageSize),
-                userService.getUserQueryWrapper(userQueryRequest));
+                                                userService.getUserQueryWrapper(userQueryRequest));
         //先封装一下整体信息
         Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
         //对用户信息脱敏

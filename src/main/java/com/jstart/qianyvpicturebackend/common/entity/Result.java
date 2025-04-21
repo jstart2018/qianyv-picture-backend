@@ -1,6 +1,6 @@
 package com.jstart.qianyvpicturebackend.common.entity;
 
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -21,29 +21,29 @@ public class Result<T> implements Serializable {
     }
 
     public static <T> Result<T> success(T data) {
-        return new Result<T>(ErrorEnum.SUCCESS.getCode(),
-                data, ErrorEnum.SUCCESS.getMessage());
+        return new Result<T>(ResultEnum.SUCCESS.getCode(),
+                data, ResultEnum.SUCCESS.getMessage());
 
     }
 
     public static <T> Result<T> success(T data,String message) {
-        return new Result<T>(ErrorEnum.SUCCESS.getCode(),
+        return new Result<T>(ResultEnum.SUCCESS.getCode(),
                 data, message);
 
     }
 
     public static  Result success() {
 
-        return new Result(ErrorEnum.SUCCESS.getCode(),
-                null, ErrorEnum.SUCCESS.getMessage());
+        return new Result(ResultEnum.SUCCESS.getCode(),
+                null, ResultEnum.SUCCESS.getMessage());
     }
 
-    public static <T> Result<T> error(ErrorEnum errorEnum) {
-        return new Result<>(errorEnum.getCode(),null,errorEnum.getMessage());
+    public static <T> Result<T> error(ResultEnum resultEnum) {
+        return new Result<>(resultEnum.getCode(),null, resultEnum.getMessage());
     }
 
-    public static <T> Result<T> error(ErrorEnum errorEnum,String message) {
-        return new Result<>(errorEnum.getCode(),null,message);
+    public static <T> Result<T> error(ResultEnum resultEnum, String message) {
+        return new Result<>(resultEnum.getCode(),null,message);
     }
 
     public static <T> Result<T> error(int code,String message) {

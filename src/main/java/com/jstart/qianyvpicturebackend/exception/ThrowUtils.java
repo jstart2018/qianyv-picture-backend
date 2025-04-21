@@ -20,7 +20,7 @@ public class ThrowUtils {
      * @param condition 条件
      * @param exceptionCode 异常code
      */
-    public static void throwIf(boolean condition, ErrorEnum exceptionCode) {
+    public static void throwIf(boolean condition, ResultEnum exceptionCode) {
         if (condition) {
             throwIf(condition,new BusinessException(exceptionCode));
         }
@@ -31,7 +31,7 @@ public class ThrowUtils {
      * @param exceptionCode 异常code
      * @param message   异常消息
      */
-    public static void throwIf(boolean condition, ErrorEnum exceptionCode, String message) {
+    public static void throwIf(boolean condition, ResultEnum exceptionCode, String message) {
         if (condition) {
             throwIf(condition,new BusinessException(exceptionCode,message));
         }

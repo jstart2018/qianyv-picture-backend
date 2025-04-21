@@ -8,21 +8,17 @@ import cn.hutool.core.util.RandomUtil;
 import com.jstart.qianyvpicturebackend.common.manager.CosManager;
 import com.jstart.qianyvpicturebackend.config.CosClientConfig;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
-import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
 import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -88,7 +84,7 @@ public abstract class PictureUploadTemplate {
 
         } catch (IOException e) {
             log.error(e.getMessage());
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR, "上传文件失败");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR, "上传文件失败");
         } finally {
             //9、删除文件
             boolean delete = file.delete();

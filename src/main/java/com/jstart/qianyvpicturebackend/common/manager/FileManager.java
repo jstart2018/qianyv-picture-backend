@@ -6,12 +6,11 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.jstart.qianyvpicturebackend.config.CosClientConfig;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
-import com.qcloud.cos.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 
 @Service
 @Slf4j
@@ -90,7 +88,7 @@ public class FileManager {
 
         } catch (IOException e) {
             log.error(e.getMessage());
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR,"上传文件失败");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR,"上传文件失败");
         } finally {
             //删除文件
             boolean delete = file.delete();
@@ -102,16 +100,16 @@ public class FileManager {
     }
 
     private void checkPictureObject(MultipartFile multipartFile) {
-        ThrowUtils.throwIf(multipartFile==null, ErrorEnum.PARAMS_ERROR,"文件不能为空");
+        ThrowUtils.throwIf(multipartFile==null, ResultEnum.PARAMS_ERROR,"文件不能为空");
         //校验文件大小
         Long MAX_OBJECT_SIZE = 5*1024*1024L;
-        ThrowUtils.throwIf(multipartFile.getSize()>MAX_OBJECT_SIZE,ErrorEnum.PARAMS_ERROR,"文件不能大于5MB");
+        ThrowUtils.throwIf(multipartFile.getSize()>MAX_OBJECT_SIZE, ResultEnum.PARAMS_ERROR,"文件不能大于5MB");
         //校验文件后缀
         //获取原文件后缀：
         String originalSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
         //定义可上传的文件后缀：
         List<String> ALLOW_OBJECT_SUFFIX = Arrays.asList("png","jpg","jpeg","gif","webp");
-        ThrowUtils.throwIf(!ALLOW_OBJECT_SUFFIX.contains(originalSuffix),ErrorEnum.PARAMS_ERROR,"文件格式不符合要求");
+        ThrowUtils.throwIf(!ALLOW_OBJECT_SUFFIX.contains(originalSuffix), ResultEnum.PARAMS_ERROR,"文件格式不符合要求");
 
     }
 

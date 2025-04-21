@@ -11,7 +11,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
 import com.jstart.qianyvpicturebackend.common.manager.CosManager;
@@ -19,7 +18,7 @@ import com.jstart.qianyvpicturebackend.common.manager.uploadFile.FilePictureUplo
 import com.jstart.qianyvpicturebackend.common.manager.uploadFile.PictureUploadTemplate;
 import com.jstart.qianyvpicturebackend.common.manager.uploadFile.UrlPictureUpload;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
 import com.jstart.qianyvpicturebackend.model.dto.picture.*;
@@ -115,19 +114,19 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
-        ThrowUtils.throwIf(loginUser == null, ErrorEnum.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(loginUser == null, ResultEnum.NO_AUTH_ERROR);
         //1、 判断是否是上传到非公共空间，只要空间拥有者才可以上传
         Long spaceId = pictureUploadRequest.getSpaceId();
         if (spaceId != null) {
             Space space = spaceService.getById(spaceId);
-            ThrowUtils.throwIf(space == null, ErrorEnum.NOT_FOUND_ERROR,"空间错误/");
+            ThrowUtils.throwIf(space == null, ResultEnum.NOT_FOUND_ERROR,"空间错误/");
             if (!loginUser.getId().equals(space.getUserId()))
-                throw new BusinessException(ErrorEnum.NO_AUTH_ERROR,"没有该空间权限");
+                throw new BusinessException(ResultEnum.NO_AUTH_ERROR,"没有该空间权限");
             //校验空间大小
             if (space.getTotalCount()>=space.getMaxCount())
-                throw new BusinessException(ErrorEnum.OPERATION_ERROR,"空间可用条数不足");
+                throw new BusinessException(ResultEnum.OPERATION_ERROR,"空间可用条数不足");
             if (space.getTotalSize() >= space.getMaxSize())
-                throw new BusinessException(ErrorEnum.OPERATION_ERROR,"空间可用容量不足");
+                throw new BusinessException(ResultEnum.OPERATION_ERROR,"空间可用容量不足");
         }
         //2、用于判断是新增还是更新图片
         Long pictureId = null;
@@ -138,10 +137,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 如果是更新图片，需要校验图片是否存在
         if (pictureId != null) {
             Picture picture = this.getById(pictureId);
-            ThrowUtils.throwIf(picture == null, ErrorEnum.NOT_FOUND_ERROR, "图片不存在");
+            ThrowUtils.throwIf(picture == null, ResultEnum.NOT_FOUND_ERROR, "图片不存在");
             //且仅有本人或管理员才能更新图片信息（重新上传）
             if (picture.getUserId().equals(loginUser.getId()) && userService.isAdmin(loginUser)) {
-                throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
+                throw new BusinessException(ResultEnum.NO_AUTH_ERROR);
             }
             //是更新，且有权限，先删除原来
             this.clearPictureFile(picture,spaceId);
@@ -193,14 +192,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         transactionTemplate.execute(status -> {
             //、操作数据库
             boolean saveResult = this.saveOrUpdate(picture);
-            ThrowUtils.throwIf(!saveResult, ErrorEnum.OPERATION_ERROR, "图片上传数据库失败");
+            ThrowUtils.throwIf(!saveResult, ResultEnum.OPERATION_ERROR, "图片上传数据库失败");
             if (spaceId == null)
                 return saveResult;
             boolean updateResult = spaceService.lambdaUpdate().eq(Space::getId, spaceId)
                     .setSql("totalSize = totalSize+" + picture.getPicSize())
                     .setSql("totalCount = totalCount+ 1")
                     .update();
-            ThrowUtils.throwIf(!updateResult, ErrorEnum.OPERATION_ERROR, "空间更新失败");
+            ThrowUtils.throwIf(!updateResult, ResultEnum.OPERATION_ERROR, "空间更新失败");
 
             return saveResult && updateResult;
         });
@@ -213,7 +212,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long id = deleteRequest.getId();
         //查询数据库数据是否存在
         Picture picture = this.getById(id);
-        ThrowUtils.throwIf(picture==null, ErrorEnum.NOT_FOUND_ERROR,"没有该图片");
+        ThrowUtils.throwIf(picture==null, ResultEnum.NOT_FOUND_ERROR,"没有该图片");
         //校验图片权限
         //已经用注解校验权限
         //this.checkPictureAuth(picture,loginUser);
@@ -228,11 +227,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                         .setSql("totalSize = totalSize-" + picture.getPicSize())
                         .setSql("totalCount = totalCount - 1")
                         .update();
-                ThrowUtils.throwIf(!updateResult, ErrorEnum.OPERATION_ERROR, "空间更新失败");
+                ThrowUtils.throwIf(!updateResult, ResultEnum.OPERATION_ERROR, "空间更新失败");
             }
             //删除数据库数据
             boolean removeResult = this.removeById(id);
-            ThrowUtils.throwIf(!removeResult, ErrorEnum.OPERATION_ERROR, "操作数据库失败");
+            ThrowUtils.throwIf(!removeResult, ResultEnum.OPERATION_ERROR, "操作数据库失败");
             return removeResult;
         });
         return true;
@@ -248,7 +247,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setTags(tagsJsonStr);
         //如果该id的图片不存在：
         Picture oldPicture = this.getById(picture.getId());
-        ThrowUtils.throwIf(oldPicture==null,ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldPicture==null, ResultEnum.NOT_FOUND_ERROR);
         //校验权限
         //已经使用注解校验权限
         //this.checkPictureAuth(picture,loginUser);
@@ -258,7 +257,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         this.pictureReviewPretreatment(picture,loginUser);
         //操作数据库
         boolean result = this.updateById(picture);
-        ThrowUtils.throwIf(!result,ErrorEnum.OPERATION_ERROR,"操作数据库失败");
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR,"操作数据库失败");
         return result;
     }
 
@@ -386,7 +385,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (userIdUserListMap.containsKey(userId)) {
                 user = userIdUserListMap.get(userId).get(0);
             } else
-                throw new BusinessException(ErrorEnum.SYSTEM_ERROR, "picture转VO错误");
+                throw new BusinessException(ResultEnum.SYSTEM_ERROR, "picture转VO错误");
             UserVO userVO = new UserVO();
             BeanUtils.copyProperties(user, userVO);
             pictureVO.setUserVO(userVO);
@@ -402,21 +401,21 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public void validPicture(Picture picture) {
-        ThrowUtils.throwIf(picture == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(picture == null, ResultEnum.PARAMS_ERROR);
         // 从对象中取值
         Long id = picture.getId();
         String url = picture.getUrl();
         String introduction = picture.getIntroduction();
         // 修改数据时，id 不能为空，有参数则校验
-        ThrowUtils.throwIf(ObjUtil.isNull(id), ErrorEnum.PARAMS_ERROR, "id 不能为空");
+        ThrowUtils.throwIf(ObjUtil.isNull(id), ResultEnum.PARAMS_ERROR, "id 不能为空");
         //查询该图片是否存在
         Picture p = pictureMapper.selectById(id);
-        ThrowUtils.throwIf(p == null, ErrorEnum.NOT_FOUND_ERROR, "图片不存在");
+        ThrowUtils.throwIf(p == null, ResultEnum.NOT_FOUND_ERROR, "图片不存在");
         if (StrUtil.isNotBlank(url)) {
-            ThrowUtils.throwIf(url.length() > 1024, ErrorEnum.PARAMS_ERROR, "url 过长");
+            ThrowUtils.throwIf(url.length() > 1024, ResultEnum.PARAMS_ERROR, "url 过长");
         }
         if (StrUtil.isNotBlank(introduction)) {
-            ThrowUtils.throwIf(introduction.length() > 800, ErrorEnum.PARAMS_ERROR, "简介过长");
+            ThrowUtils.throwIf(introduction.length() > 800, ResultEnum.PARAMS_ERROR, "简介过长");
         }
     }
 
@@ -428,14 +427,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         int reviewStatus = pictureReviewRequest.getReviewStatus();
         String reviewMessage = pictureReviewRequest.getReviewMessage();
         PictureStatusEnum pictureStatusEnum = PictureStatusEnum.getByValue(reviewStatus);
-        ThrowUtils.throwIf(id == null || reviewMessage == null || pictureStatusEnum == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id == null || reviewMessage == null || pictureStatusEnum == null, ResultEnum.PARAMS_ERROR);
         //查询是否有对应图片
         Picture oldPicture = this.getById(id);
-        ThrowUtils.throwIf(oldPicture == null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldPicture == null, ResultEnum.NOT_FOUND_ERROR);
         //业务逻辑：
         //不能反复审核
         if (oldPicture.getReviewStatus().equals(reviewStatus)) {
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR, "不能反复审核");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR, "不能反复审核");
         }
         //更新审核状态
         User loginUser = userService.getLoginUser(request);
@@ -460,7 +459,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             namePrefix = searchText;
         }
 
-        ThrowUtils.throwIf(count > 30 || count < 1, ErrorEnum.PARAMS_ERROR, "仅可导入1~30 条");
+        ThrowUtils.throwIf(count > 30 || count < 1, ResultEnum.PARAMS_ERROR, "仅可导入1~30 条");
         // 要抓取的地址,两个占位符分别是：搜索词，从第几条开始；
         int pageIndex = RandomUtil.randomInt(200);
         String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1&first=%s", searchText, pageIndex);
@@ -469,15 +468,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             document = Jsoup.connect(fetchUrl).get();
         } catch (IOException e) {
             log.error("获取页面失败", e);
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR, "获取页面失败");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR, "获取页面失败");
         }
         Element div = document.getElementsByClass("dgControl").first();
         if (ObjUtil.isNull(div)) {
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR, "获取元素失败");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR, "获取元素失败");
         }
         //Elements imgElementList = div.select("img.mimg"); 这里的div中的src是缩略图，
         // 下载原图：
-        Elements imgElementList = div.select("a.iusc");  // 修改选择器，获取包含完整数据的元素
+        Elements imgElementList = div.select("interceptor.iusc");  // 修改选择器，获取包含完整数据的元素
         //设计一个随机值，让他在这些图片中随机一个元素开始，否则每次抓取的都是同一批图片//
         int uploadCount = 0;
         int elementSize = imgElementList.size();
@@ -618,11 +617,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (spaceId == null){
             //公共区域的图片：
             if (!picture.getUserId().equals(loginUser.getId()) && userService.isAdmin(loginUser))
-                throw new BusinessException(ErrorEnum.NO_AUTH_ERROR,"没有该图片的权限");
+                throw new BusinessException(ResultEnum.NO_AUTH_ERROR,"没有该图片的权限");
         }else{
             //私有空间的图片，仅空间拥有者可以操作
             if (!picture.getUserId().equals(loginUser.getId()))
-                throw new BusinessException(ErrorEnum.NO_AUTH_ERROR,"没有该图片的权限");
+                throw new BusinessException(ResultEnum.NO_AUTH_ERROR,"没有该图片的权限");
         }
     }
 

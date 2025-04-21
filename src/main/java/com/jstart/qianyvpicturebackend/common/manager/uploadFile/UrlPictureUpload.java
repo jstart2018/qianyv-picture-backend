@@ -8,7 +8,7 @@ import cn.hutool.http.HttpStatus;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.http.Method;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,29 +30,29 @@ public class UrlPictureUpload extends PictureUploadTemplate {
     @Override
     protected void checkPictureObject(Object inputSource) {
         String fileUrl = (String) inputSource;
-        ThrowUtils.throwIf(StrUtil.isBlank(fileUrl), ErrorEnum.PARAMS_ERROR, "url不能为空");
+        ThrowUtils.throwIf(StrUtil.isBlank(fileUrl), ResultEnum.PARAMS_ERROR, "url不能为空");
         //1、校验url格式
         try {
             new URL(fileUrl);
         } catch (MalformedURLException e) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR, "url格式错误");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR, "url格式错误");
         }
         //2、校验协议
         ThrowUtils.throwIf(!(fileUrl.startsWith("https://") || fileUrl.startsWith("http://")),
-                ErrorEnum.PARAMS_ERROR, "仅支持HTTPS和HTTP协议的地址请求");
+                ResultEnum.PARAMS_ERROR, "仅支持HTTPS和HTTP协议的地址请求");
         //3、对地址发送head请求，获取元信息
         HttpResponse resp = null;
         try {
             resp = HttpUtil.createRequest(Method.HEAD, fileUrl).timeout(5000).execute();
             //4、校验是否请求成功
             if (resp.getStatus() != HttpStatus.HTTP_OK){
-                throw new BusinessException(ErrorEnum.OPERATION_ERROR,"请求url错误");
+                throw new BusinessException(ResultEnum.OPERATION_ERROR,"请求url错误");
             }
             //5、校验文件格式：
             String contentType = resp.header("Content-Type");
             if (!StrUtil.isBlank(contentType)){
                 final List<String> list = Arrays.asList("image/jpg", "image/png", "image/jpeg", "image/webp", "image/gif");
-                ThrowUtils.throwIf(!list.contains(contentType),ErrorEnum.OPERATION_ERROR,"文件类型不支持："+contentType);
+                ThrowUtils.throwIf(!list.contains(contentType), ResultEnum.OPERATION_ERROR,"文件类型不支持："+contentType);
             }
             //6、校验文件大小
             String contentLengthStr = resp.header("Content-Length");
@@ -61,14 +61,14 @@ public class UrlPictureUpload extends PictureUploadTemplate {
                     long contentLength = Long.parseLong(contentLengthStr);
                     final long MAX_PICTURE_SIZE = 1024 * 1024 * 5;
                     ThrowUtils.throwIf(contentLength>MAX_PICTURE_SIZE,
-                            ErrorEnum.OPERATION_ERROR,"图片大小不可超过5MB");
+                            ResultEnum.OPERATION_ERROR,"图片大小不可超过5MB");
                 } catch (NumberFormatException e) {
-                    throw new BusinessException(ErrorEnum.PARAMS_ERROR,"文件大小格式错误");
+                    throw new BusinessException(ResultEnum.PARAMS_ERROR,"文件大小格式错误");
                 }
             }
         }catch (IORuntimeException e){
             log.error(e.getMessage(),e);
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR,"文件请求超时，可能不允许访问");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR,"文件请求超时，可能不允许访问");
         } finally {
             //释放资源respond
             if (resp != null) {

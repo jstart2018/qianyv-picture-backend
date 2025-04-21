@@ -6,7 +6,7 @@ import com.jstart.qianyvpicturebackend.auth.annotation.SaSpaceCheckPermission;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.spaceUser.SpaceUserAddRequest;
 import com.jstart.qianyvpicturebackend.model.dto.spaceUser.SpaceUserEditRequest;
@@ -44,7 +44,7 @@ public class SpaceUserController {
     @PostMapping("/add")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest, HttpServletRequest request) {
-        ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUserAddRequest == null, ResultEnum.PARAMS_ERROR);
         long id = spaceUserService.addSpaceUser(spaceUserAddRequest);
         return Result.success(id);
     }
@@ -57,15 +57,15 @@ public class SpaceUserController {
     public Result<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest,
                                                  HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         long id = deleteRequest.getId();
         // 判断是否存在
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
-        ThrowUtils.throwIf(oldSpaceUser == null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldSpaceUser == null, ResultEnum.NOT_FOUND_ERROR);
         // 操作数据库
         boolean result = spaceUserService.removeById(id);
-        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR);
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR);
         return Result.success(true);
     }
 
@@ -76,13 +76,13 @@ public class SpaceUserController {
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         // 参数校验
-        ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUserQueryRequest == null, ResultEnum.PARAMS_ERROR);
         Long spaceId = spaceUserQueryRequest.getSpaceId();
         Long userId = spaceUserQueryRequest.getUserId();
-        ThrowUtils.throwIf(ObjectUtil.hasEmpty(spaceId, userId), ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(ObjectUtil.hasEmpty(spaceId, userId), ResultEnum.PARAMS_ERROR);
         // 查询数据库
         SpaceUser spaceUser = spaceUserService.getOne(spaceUserService.getQueryWrapper(spaceUserQueryRequest));
-        ThrowUtils.throwIf(spaceUser == null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(spaceUser == null, ResultEnum.NOT_FOUND_ERROR);
         return Result.success(spaceUser);
     }
 
@@ -93,7 +93,7 @@ public class SpaceUserController {
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public Result<List<SpaceUserVO>> listSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest,
                                                          HttpServletRequest request) {
-        ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUserQueryRequest == null, ResultEnum.PARAMS_ERROR);
         List<SpaceUser> spaceUserList = spaceUserService.list(
                 spaceUserService.getQueryWrapper(spaceUserQueryRequest)
         );
@@ -108,7 +108,7 @@ public class SpaceUserController {
     public Result<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest,
                                                HttpServletRequest request) {
         if (spaceUserEditRequest == null || spaceUserEditRequest.getId() <= 0) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         // 将实体类和 DTO 进行转换
         SpaceUser spaceUser = new SpaceUser();
@@ -118,10 +118,10 @@ public class SpaceUserController {
         // 判断是否存在
         long id = spaceUserEditRequest.getId();
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
-        ThrowUtils.throwIf(oldSpaceUser == null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldSpaceUser == null, ResultEnum.NOT_FOUND_ERROR);
         // 操作数据库
         boolean result = spaceUserService.updateById(spaceUser);
-        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR);
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR);
         return Result.success(true);
     }
 

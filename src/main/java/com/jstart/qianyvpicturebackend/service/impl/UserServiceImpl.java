@@ -8,7 +8,7 @@ import com.jstart.qianyvpicturebackend.auth.StpKit;
 import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.enums.RoleEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.user.UserLoginDTO;
 import com.jstart.qianyvpicturebackend.model.dto.user.UserQueryRequest;
@@ -62,18 +62,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Preconditions.checkArgument(!StringUtils.isBlank(userRegisterDTO.getUserPassword()), "密码不能为空");
         Preconditions.checkArgument(!StringUtils.isBlank(userRegisterDTO.getCheckPassword()), "确认密码不能为空");
         ThrowUtils.throwIf(userRegisterDTO.getUserAccount().length()<6,
-                            ErrorEnum.PARAMS_ERROR,"账号长度需大于6位");
+                            ResultEnum.PARAMS_ERROR,"账号长度需大于6位");
         ThrowUtils.throwIf(userRegisterDTO.getUserPassword().length()<6,
-                ErrorEnum.PARAMS_ERROR,"密码长度需大于6位");
+                ResultEnum.PARAMS_ERROR,"密码长度需大于6位");
         if (!userRegisterDTO.getUserPassword().equals(userRegisterDTO.getCheckPassword())){
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR,"两次密码不一致");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR,"两次密码不一致");
         }
         //判断数据库有无重复账号
         QueryWrapper<User> queryWrapper = new QueryWrapper();
         queryWrapper.eq("userAccount", userRegisterDTO.getUserAccount());
         Long count = this.baseMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR, "账号已存在");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR, "账号已存在");
         }
         //密码加密
         String encryptPassword = encryptPassword(userRegisterDTO.getUserPassword());
@@ -87,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (log.isInfoEnabled())
             log.info("user:{}", user);
         boolean save = this.save(user);
-        ThrowUtils.throwIf(!save,ErrorEnum.SYSTEM_ERROR,"注册失败，数据库异常");
+        ThrowUtils.throwIf(!save, ResultEnum.SYSTEM_ERROR,"注册失败，数据库异常");
         return user.getId();
     }
 
@@ -104,7 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.eq("userPassword",encryptPassword(userLoginDTO.getUserPassword()));//加密
         User user = this.baseMapper.selectOne(queryWrapper);
 
-        ThrowUtils.throwIf(user==null,ErrorEnum.OPERATION_ERROR,"密码错误或用户不存在");
+        ThrowUtils.throwIf(user==null, ResultEnum.OPERATION_ERROR,"密码错误或用户不存在");
 
         //4、记录登录状态
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATUS,user);
@@ -123,10 +123,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User getLoginUser(HttpServletRequest request) {
         //1、获取用户session的值
         User user = (User)request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
-        ThrowUtils.throwIf(user == null,ErrorEnum.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(user == null, ResultEnum.NOT_LOGIN_ERROR);
         //2、根据返回的用户值，查询数据库（避免数据已经被更新，而session缓存中没有更新）
         User u = this.baseMapper.selectById(user.getId());
-        ThrowUtils.throwIf(u == null,ErrorEnum.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(u == null, ResultEnum.NOT_LOGIN_ERROR);
 
         //3、返回用户数据
         return u;
@@ -136,12 +136,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public Boolean logout(HttpServletRequest request) {
         //判断用户是否已经登录，已经登录才能注销
         Object attribute = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
-        ThrowUtils.throwIf(attribute == null,ErrorEnum.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(attribute == null, ResultEnum.NOT_LOGIN_ERROR);
         //获取session，删除对应的key
         try {
             request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATUS);
         } catch (Exception e) {
-            throw new BusinessException(ErrorEnum.OPERATION_ERROR,"注销失败");
+            throw new BusinessException(ResultEnum.OPERATION_ERROR,"注销失败");
         }
         return true;
     }
@@ -173,7 +173,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public QueryWrapper<User> getUserQueryWrapper(UserQueryRequest userQueryRequest) {
         if (userQueryRequest == null) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR, "请求参数为空");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR, "请求参数为空");
         }
         String userAccount = userQueryRequest.getUserAccount();
         String userName = userQueryRequest.getUserName();

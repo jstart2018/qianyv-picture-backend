@@ -3,8 +3,7 @@ package com.jstart.qianyvpicturebackend.aop;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
 import com.jstart.qianyvpicturebackend.common.enums.RoleEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
-import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.model.entity.User;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -41,7 +40,7 @@ public class AuthInterceptor {
 
         //如果 要鉴定的是管理员权限，但登录者没有管理员权限
         if(RoleEnum.ADMIN.equals(roleEnum)&& !Objects.equals(mustRole, loginUser.getUserRole())){
-            throw new BusinessException(ErrorEnum.NOT_LOGIN_ERROR,"无权限");
+            throw new BusinessException(ResultEnum.NOT_LOGIN_ERROR,"无权限");
         }
 
 

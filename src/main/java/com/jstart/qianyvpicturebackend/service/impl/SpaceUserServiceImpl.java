@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.qianyvpicturebackend.common.enums.SpaceRoleEnum;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
 import com.jstart.qianyvpicturebackend.model.dto.spaceUser.SpaceUserAddRequest;
 import com.jstart.qianyvpicturebackend.model.dto.spaceUser.SpaceUserQueryRequest;
@@ -50,35 +50,35 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
     @Override
     public long addSpaceUser(SpaceUserAddRequest spaceUserAddRequest) {
         // 参数校验
-        ThrowUtils.throwIf(spaceUserAddRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUserAddRequest == null, ResultEnum.PARAMS_ERROR);
         SpaceUser spaceUser = new SpaceUser();
         BeanUtils.copyProperties(spaceUserAddRequest, spaceUser);
         validSpaceUser(spaceUser, true);
         // 数据库操作
         boolean result = this.save(spaceUser);
-        ThrowUtils.throwIf(!result, ErrorEnum.OPERATION_ERROR);
+        ThrowUtils.throwIf(!result, ResultEnum.OPERATION_ERROR);
         return spaceUser.getId();
     }
 
 
     @Override
     public void validSpaceUser(SpaceUser spaceUser, boolean add) {
-        ThrowUtils.throwIf(spaceUser == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(spaceUser == null, ResultEnum.PARAMS_ERROR);
         // 创建时，空间 id 和用户 id 必填
         Long spaceId = spaceUser.getSpaceId();
         Long userId = spaceUser.getUserId();
         if (add) {
-            ThrowUtils.throwIf(ObjectUtil.hasEmpty(spaceId, userId), ErrorEnum.PARAMS_ERROR);
+            ThrowUtils.throwIf(ObjectUtil.hasEmpty(spaceId, userId), ResultEnum.PARAMS_ERROR);
             User user = userService.getById(userId);
-            ThrowUtils.throwIf(user == null, ErrorEnum.NOT_FOUND_ERROR, "用户不存在");
+            ThrowUtils.throwIf(user == null, ResultEnum.NOT_FOUND_ERROR, "用户不存在");
             Space space = spaceService.getById(spaceId);
-            ThrowUtils.throwIf(space == null, ErrorEnum.NOT_FOUND_ERROR, "空间不存在");
+            ThrowUtils.throwIf(space == null, ResultEnum.NOT_FOUND_ERROR, "空间不存在");
         }
         // 校验空间角色
         String spaceRole = spaceUser.getSpaceRole();
         SpaceRoleEnum spaceRoleEnum = SpaceRoleEnum.getByValue(spaceRole);
         if (spaceRole != null && spaceRoleEnum == null) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR, "空间角色不存在");
+            throw new BusinessException(ResultEnum.PARAMS_ERROR, "空间角色不存在");
         }
     }
 

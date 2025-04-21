@@ -3,7 +3,7 @@ package com.jstart.qianyvpicturebackend.exception;
 import lombok.Getter;
 
 @Getter
-public enum ErrorEnum {
+public enum ResultEnum {
 
     SUCCESS(0, "ok"),
     PARAMS_ERROR(40000, "请求参数错误"),
@@ -24,7 +24,7 @@ public enum ErrorEnum {
      */
     private final String message;
 
-    ErrorEnum(int code, String message) {
+    ResultEnum(int code, String message) {
         this.code = code;
         this.message = message;
     }

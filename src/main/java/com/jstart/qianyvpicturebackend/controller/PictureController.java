@@ -1,7 +1,5 @@
 package com.jstart.qianyvpicturebackend.controller;
 
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.qianyvpicturebackend.annotation.AuthCheck;
@@ -13,14 +11,10 @@ import com.jstart.qianyvpicturebackend.common.constant.UserConstant;
 import com.jstart.qianyvpicturebackend.common.entity.DeleteRequest;
 import com.jstart.qianyvpicturebackend.common.entity.Result;
 import com.jstart.qianyvpicturebackend.common.enums.PictureStatusEnum;
-import com.jstart.qianyvpicturebackend.common.manager.CosManager;
-import com.jstart.qianyvpicturebackend.common.manager.FileManager;
 import com.jstart.qianyvpicturebackend.exception.BusinessException;
-import com.jstart.qianyvpicturebackend.exception.ErrorEnum;
+import com.jstart.qianyvpicturebackend.exception.ResultEnum;
 import com.jstart.qianyvpicturebackend.exception.ThrowUtils;
-import com.jstart.qianyvpicturebackend.model.dto.file.UploadPictureResult;
 import com.jstart.qianyvpicturebackend.model.dto.picture.*;
-import com.jstart.qianyvpicturebackend.model.dto.space.SpaceQueryRequest;
 import com.jstart.qianyvpicturebackend.model.entity.Picture;
 import com.jstart.qianyvpicturebackend.model.entity.Space;
 import com.jstart.qianyvpicturebackend.model.entity.User;
@@ -31,19 +25,13 @@ import com.jstart.qianyvpicturebackend.service.SpaceService;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.spring.web.json.Json;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/picture/")
@@ -99,7 +87,7 @@ public class PictureController {
     public Result<Boolean> deletePicture(@RequestBody DeleteRequest deleteRequest,
                                          HttpServletRequest request) {
         ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0,
-                ErrorEnum.PARAMS_ERROR);
+                ResultEnum.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         boolean result = pictureService.deletePicture(deleteRequest, loginUser);
         return Result.success(result);
@@ -116,7 +104,7 @@ public class PictureController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Boolean> updatePicture(@RequestBody PictureUpdateRequest pictureUpdateRequest,
                                          HttpServletRequest request) {
-        ThrowUtils.throwIf(pictureUpdateRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureUpdateRequest == null, ResultEnum.PARAMS_ERROR);
         //转移实体
         Picture picture = new Picture();
         BeanUtils.copyProperties(pictureUpdateRequest, picture);
@@ -127,7 +115,7 @@ public class PictureController {
         pictureService.pictureReviewPretreatment(picture, userService.getLoginUser(request));
         //操作数据库
         boolean result = pictureService.updateById(picture);
-        ThrowUtils.throwIf(!result, ErrorEnum.SYSTEM_ERROR, "操作数据库失败");
+        ThrowUtils.throwIf(!result, ResultEnum.SYSTEM_ERROR, "操作数据库失败");
         return Result.success(result);
     }
 
@@ -142,7 +130,7 @@ public class PictureController {
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public Result<Boolean> editPicture(PictureEditRequest pictureEditRequest, HttpServletRequest request) {
         if (pictureEditRequest == null || pictureEditRequest.getId() <= 0) {
-            throw new BusinessException(ErrorEnum.PARAMS_ERROR);
+            throw new BusinessException(ResultEnum.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
         boolean result = pictureService.editPicture(pictureEditRequest, loginUser);
@@ -159,10 +147,10 @@ public class PictureController {
     @PostMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Picture> getPictureById(Long id) {
-        ThrowUtils.throwIf(id == null || id <= 0, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id == null || id <= 0, ResultEnum.PARAMS_ERROR);
         //查询数据库
         Picture picture = pictureService.getById(id);
-        ThrowUtils.throwIf(picture != null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(picture != null, ResultEnum.NOT_FOUND_ERROR);
         return Result.success(picture);
 
     }
@@ -175,10 +163,10 @@ public class PictureController {
      */
     @PostMapping("/get/vo")
     public Result<PictureVO> getPictureVOById(Long id, HttpServletRequest request) {
-        ThrowUtils.throwIf(id == null || id <= 0, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(id == null || id <= 0, ResultEnum.PARAMS_ERROR);
         //查询数据库
         Picture picture = pictureService.getById(id);
-        ThrowUtils.throwIf(picture != null, ErrorEnum.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(picture != null, ResultEnum.NOT_FOUND_ERROR);
         //查是否有权限
         Space space = null;
         if (picture.getSpaceId() != null) {
@@ -188,10 +176,10 @@ public class PictureController {
 
             //空间里面的图片要有读权限
             boolean result = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
-            ThrowUtils.throwIf(result, ErrorEnum.NO_AUTH_ERROR);
+            ThrowUtils.throwIf(result, ResultEnum.NO_AUTH_ERROR);
 
             space = spaceService.getById(picture.getSpaceId());
-            ThrowUtils.throwIf(space==null, ErrorEnum.NOT_FOUND_ERROR);
+            ThrowUtils.throwIf(space==null, ResultEnum.NOT_FOUND_ERROR);
         }
         PictureVO pictureVO = new PictureVO();
         BeanUtils.copyProperties(picture, pictureVO);
@@ -215,7 +203,7 @@ public class PictureController {
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Page<Picture>> getPictureList(@RequestBody PictureQueryRequest pictureQueryRequest) {
-        ThrowUtils.throwIf(pictureQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureQueryRequest == null, ResultEnum.PARAMS_ERROR);
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
 
@@ -232,9 +220,9 @@ public class PictureController {
      */
     @PostMapping("/list/page/vo")
     public Result<Page<PictureVO>> getPictureListVO(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
-        ThrowUtils.throwIf(pictureQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureQueryRequest == null, ResultEnum.PARAMS_ERROR);
         //防止爬虫
-        ThrowUtils.throwIf(pictureQueryRequest.getPageSize() > 20, ErrorEnum.PARAMS_ERROR, "页面数量过大");
+        ThrowUtils.throwIf(pictureQueryRequest.getPageSize() > 20, ResultEnum.PARAMS_ERROR, "页面数量过大");
 
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
@@ -249,7 +237,7 @@ public class PictureController {
 
             Long spaceId = pictureQueryRequest.getSpaceId();
             Space space = spaceService.getById(spaceId);
-            ThrowUtils.throwIf(space == null, ErrorEnum.NOT_FOUND_ERROR, "没有该空间");
+            ThrowUtils.throwIf(space == null, ResultEnum.NOT_FOUND_ERROR, "没有该空间");
             /*if (!(space.getUserId().equals(loginUser.getId()))) {
                 throw new BusinessException(ErrorEnum.NO_AUTH_ERROR);
             }*/
@@ -257,7 +245,7 @@ public class PictureController {
             //使用sa-token鉴权：
             //空间里面的图片要有读权限
             boolean result = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
-            ThrowUtils.throwIf(result, ErrorEnum.NO_AUTH_ERROR);
+            ThrowUtils.throwIf(result, ResultEnum.NO_AUTH_ERROR);
             pictureQueryRequest.setNullSpace(false);
         } else {
             //查公共图片的请求，默认只能看已经过审的数据
@@ -280,9 +268,9 @@ public class PictureController {
      */
     @PostMapping("/list/page/vo/cache")
     public Result<Page<PictureVO>> getPictureListVOWithCache(@RequestBody PictureQueryRequest pictureQueryRequest) {
-        ThrowUtils.throwIf(pictureQueryRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureQueryRequest == null, ResultEnum.PARAMS_ERROR);
         //防止爬虫
-        ThrowUtils.throwIf(pictureQueryRequest.getPageSize() > 20, ErrorEnum.PARAMS_ERROR, "页面数量过大");
+        ThrowUtils.throwIf(pictureQueryRequest.getPageSize() > 20, ResultEnum.PARAMS_ERROR, "页面数量过大");
 
         Page<PictureVO> pictureVOPage = pictureService.getPictureVOPage(pictureQueryRequest);
 
@@ -311,7 +299,7 @@ public class PictureController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Result<Boolean> doPictureReview(@RequestBody PictureReviewRequest pictureReviewRequest,
                                            HttpServletRequest request) {
-        ThrowUtils.throwIf(pictureReviewRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureReviewRequest == null, ResultEnum.PARAMS_ERROR);
         Boolean isOk = pictureService.doPictureReview(pictureReviewRequest, request);
         return Result.success(isOk);
     }
@@ -322,10 +310,10 @@ public class PictureController {
             @RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,
             HttpServletRequest request
     ) {
-        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ErrorEnum.PARAMS_ERROR);
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null, ResultEnum.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         int uploadCount = pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUser);
-        ThrowUtils.throwIf(uploadCount <= 0, ErrorEnum.OPERATION_ERROR, "图片内部解析错误");
+        ThrowUtils.throwIf(uploadCount <= 0, ResultEnum.OPERATION_ERROR, "图片内部解析错误");
         return Result.success(uploadCount);
     }
 
