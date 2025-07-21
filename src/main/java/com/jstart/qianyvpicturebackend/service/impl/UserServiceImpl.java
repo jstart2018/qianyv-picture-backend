@@ -1,5 +1,6 @@
 package com.jstart.qianyvpicturebackend.service.impl;
 
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -82,6 +83,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BeanUtils.copyProperties(userRegisterDTO,user);
         user.setUserPassword(encryptPassword);
         user.setUserName("语友"+ (10000+new Random().nextInt(90000)));
+        RandomUtil.randomNumbers(6);
         user.setUserRole(RoleEnum.USER.getValue());
         //插入数据库
         if (log.isInfoEnabled())

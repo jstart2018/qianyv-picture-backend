@@ -1,5 +1,5 @@
 server:
-  port: 8000
+  port: 8123
   servlet:
     context-path: /api #设置上下文，请求这个后端时要：localhost:8000/api
     session:
@@ -51,7 +51,7 @@ knife4j:
     version: v1.0
     group:
       default: #组别
-        group-name: 默认分组  #组名
+#        group-name: 默认分组  #组名
         api-rule: package   #用什么规则识别接口，package表示扫描包，把这个包下的接口扫描出来
         api-rule-resources:
           - com.jstart.qianyvpicturebackend.controller # 包的位置

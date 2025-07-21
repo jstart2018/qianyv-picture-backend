@@ -15,17 +15,15 @@ import com.jstart.qianyvpicturebackend.model.vo.UserVO;
 import com.jstart.qianyvpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
-@RestController("/user/")
+@RestController
 @Slf4j
+@RequestMapping("/user/")
 public class UserController {
     @Resource
     private UserService userService;
@@ -44,11 +42,10 @@ public class UserController {
      */
     @PostMapping("register")
     public Result<Long> register(@RequestBody UserRegisterDTO userRegisterDTO) {
-        //如果请求参数为空，直接抛异常
-        ThrowUtils.throwIf(userRegisterDTO == null, ResultEnum.PARAMS_ERROR, "参数为空");
-        log.info("userDTO:{}", userRegisterDTO);
-        Long result = userService.userRegister(userRegisterDTO);
-        return Result.success(result);
+        ThrowUtils.throwIf(userRegisterDTO==null,ResultEnum.PARAMS_ERROR);
+        log.info("userRegisterDTO:{}",userRegisterDTO);
+        Long userId = userService.userRegister(userRegisterDTO);
+        return Result.success(userId);
     }
 
     /**

@@ -144,8 +144,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
             //是更新，且有权限，先删除原来
             this.clearPictureFile(picture,spaceId);
-
         }
+
 
         // 上传图片，得到信息
         // 1、区分是上传到哪个空间
@@ -360,10 +360,39 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (CollUtil.isEmpty(pictureList)) {
             return pictureVOPage;
         }
+        List<User> userList = pictureList.stream().map(picture -> {
+            Long userId = picture.getUserId();
+            return userService.getById(userId);
+        }).collect(Collectors.toList());
+
+
+
+
         // 对象列表 => 封装对象列表
         List<PictureVO> pictureVOList = pictureList.stream()
                 .map(PictureVO::objToVo)
                 .collect(Collectors.toList());
+
+        pictureVOList.forEach(pictureVO -> {
+            // 设置用户信息
+            Long userId = pictureVO.getUserId();
+            //找到与userId匹配的用户
+            User user = userList.stream()
+                    .filter(u -> u.getId().equals(userId))
+                    .findFirst()
+                    .orElse(null);
+            //将用户信息转为VO
+            if (user != null) {
+                UserVO userVO = new UserVO();
+                BeanUtils.copyProperties(user, userVO);
+                pictureVO.setUserVO(userVO);
+            } else {
+                // 如果没有找到用户，抛出异常
+                throw new BusinessException(ResultEnum.SYSTEM_ERROR, "picture转VO错误");
+            }
+        });
+
+
         // 1. 关联查询用户信息
         Set<Long> userIdSet = pictureList.stream()
                 .map(Picture::getUserId)

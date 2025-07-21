@@ -3,6 +3,7 @@ package com.jstart.qianyvpicturebackend.model.vo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 用户
@@ -40,6 +41,16 @@ public class UserVO implements Serializable {
      * 用户角色：user/admin
      */
     private String userRole;
+
+    /**
+     * 编辑时间
+     */
+    private Date editTime;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
 
 
 
